@@ -15,10 +15,10 @@ Checkbox mencatat pekerjaan yang telah selesai atau masih terbuka. Ikuti `AGENTS
 
 ## 2. Prototipe pengenalan kamera
 
-- [ ] 2.1 Tulis plan prototipe untuk lima gerakan, verifikasi sumber/lisensi/checksum model, serta pin versi; deliver manifest model dan protokol evaluasi yang memisahkan tuning/evaluation.
-- [ ] 2.2 RED: tes adapter keypoint/replay untuk smoothing, debounce, confidence rendah, landmark hilang, partial cycles, dan non-workout negatives; verifikasi failure sebelum implementasi.
-- [ ] 2.3 GREEN/REFACTOR: implementasikan adapter browser/worker dan temporal classifier; verifikasi replay tests lulus dan tidak ada upload media/pose melalui network assertions.
-- [ ] 2.4 RED → GREEN → REFACTOR: unknown/manual fallback, panduan posisi, tracking-loss guard, serta pergantian latihan; verifikasi scenario tests pada kelima gerakan.
+- [x] 2.1 Tulis plan prototipe untuk lima gerakan, verifikasi sumber/lisensi/checksum model, serta pin versi; deliver manifest model dan protokol evaluasi yang memisahkan tuning/evaluation.
+- [x] 2.2 RED: tes adapter keypoint/replay untuk smoothing, debounce, confidence rendah, landmark hilang, partial cycles, dan non-workout negatives; verifikasi failure sebelum implementasi.
+- [x] 2.3 GREEN/REFACTOR: implementasikan adapter browser/worker dan temporal classifier; verifikasi replay tests lulus dan tidak ada upload media/pose melalui network assertions.
+- [x] 2.4 RED → GREEN → REFACTOR: unknown/manual fallback, panduan posisi, tracking-loss guard, serta pergantian latihan; verifikasi scenario tests pada kelima gerakan.
 - [ ] 2.5 Susun contoh real-workout berlabel dan berizin minimal 20 set per gerakan dari ≥5 orang; verifikasi label, partisipan, kondisi kamera, dan split tuning/evaluation dalam manifest tanpa memakai data sintetis sebagai pengganti.
 - [ ] 2.6 Jalankan evaluasi label/reps otomatis per gerakan; deliver laporan kedua metrik, unknown failures, dan gate ≥90%/≥90%, serta diagnosis jika gate gagal.
 - [ ] 2.7 Dokumentasikan batas kamera/model dan hasil prototipe sebenarnya; verifikasi klaim dukungan cocok dengan laporan, bukan hasil yang dikoreksi pengguna.

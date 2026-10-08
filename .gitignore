@@ -9,3 +9,4 @@ test-results/
 backend/bin/
 backend/data/
 *.log
+frontend/public/vision/

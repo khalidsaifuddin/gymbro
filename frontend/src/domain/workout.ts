@@ -10,6 +10,7 @@ export type WorkoutSet = {
   id: string;
   exercise: ExerciseId;
   detectedReps: number;
+  origin: 'automatic' | 'manual' | 'mixed';
   reps: number;
   startedAt: number;
   endedAt: number | null;
@@ -42,6 +43,18 @@ export class WorkoutSession {
 
   constructor(options: SessionOptions) { this.options = options; this.startedAt = options.clock(); }
 
+  addManualSet(exercise: ExerciseId, reps: number, loadKg: number | null = null): string {
+    if (this.finishedAt !== null) throw new Error('Workout is finished');
+    if (!Number.isSafeInteger(reps) || reps < 1 || reps > 2147483647) throw new Error('Manual reps must be a positive integer');
+    this.validateLoad(loadKg);
+    const id=this.options.idFactory(), now=this.options.clock();
+    this.endSet();
+    this.sets.push({id,exercise,reps,detectedReps:0,origin:'manual',startedAt:now,endedAt:now,lastRepAt:now,
+      loadKg:loadKg===null?null:Math.round(loadKg*1000)/1000,implementCount:exercise==='dumbbell-curl'?2:1,
+      sourceIds:[id],loadEdited:true});
+    return id;
+  }
+
   observe(observation: Observation): void {
     if (this.finishedAt !== null) throw new Error('Workout is finished');
     if (this.paused) return;
@@ -68,7 +81,7 @@ export class WorkoutSession {
       if (this.anchor && this.reachedPeak) {
         if (!this.current) {
           const id = this.options.idFactory();
-          this.current = { id, exercise, detectedReps: 0, reps: 0, startedAt: this.anchor.at,
+          this.current = { id, exercise, detectedReps: 0, origin: 'automatic', reps: 0, startedAt: this.anchor.at,
             endedAt: null, lastRepAt: now, loadKg: null, implementCount: exercise === 'dumbbell-curl' ? 2 : 1, sourceIds: [id] };
           this.sets.push(this.current);
         }
@@ -86,16 +99,20 @@ export class WorkoutSession {
 
   getSets(): WorkoutSet[] { return structuredClone(this.sets); }
   setLoad(id: string, loadKg: number | null, implementCount?: number): void {
+    this.validateLoad(loadKg, implementCount);
+    const set = this.requireSet(id);
+    set.loadKg = loadKg === null ? null : Math.round(loadKg * 1000) / 1000;
+    set.implementCount = implementCount ?? set.implementCount;
+    set.loadEdited = true;
+  }
+
+  private validateLoad(loadKg: number | null, implementCount?: number): void {
     if (loadKg !== null && (!Number.isFinite(loadKg) || loadKg < 0 || loadKg > 99999.999)) {
       throw new Error('Load must be a nonnegative finite kg value within the storage range');
     }
     if (implementCount !== undefined && (!Number.isSafeInteger(implementCount) || implementCount < 1 || implementCount > 32767)) {
       throw new Error('Implement count must be a positive integer within the storage range');
     }
-    const set = this.requireSet(id);
-    set.loadKg = loadKg === null ? null : Math.round(loadKg * 1000) / 1000;
-    set.implementCount = implementCount ?? set.implementCount;
-    set.loadEdited = true;
   }
 
   summary(): WorkoutSummary {
@@ -156,6 +173,7 @@ export class WorkoutSession {
     if (selected.some(set => set.exercise !== selected[0].exercise)) throw new Error('Merge requires the same exercise');
     const sameLoad = selected.every(set => set.loadKg === selected[0].loadKg && set.implementCount === selected[0].implementCount);
     const merged: WorkoutSet = { ...selected[0],
+      origin: selected.every(set => set.origin === selected[0].origin) ? selected[0].origin : 'mixed',
       reps: selected.reduce((n, set) => n + set.reps, 0),
       detectedReps: selected.reduce((n, set) => n + set.detectedReps, 0),
       endedAt: Math.max(...selected.map(set => set.endedAt!)),

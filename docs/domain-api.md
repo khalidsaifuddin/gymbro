@@ -11,6 +11,7 @@
 - `correctSet(id, reps)` hanya untuk set selesai; raw `detectedReps` dipertahankan. `mergeSets(ids)` mempertahankan lineage/source snapshots dan total raw/final reps.
 - `setLoad(id, kg, implementCount?)`: kg nonnegative finite, dibulatkan tiga desimal dan dibatasi ke rentang NUMERIC(8,3). Nilai NULL tetap absent. Dumbbell default dua alat, barbell/mesin satu.
 - `pause()`, `resume()`, `finish()`: siklus terputus dibuang. Finish membekukan waktu; hasil final masih dapat dikoreksi tanpa menjalankan kamera kembali.
+- `addManualSet(exercise, reps, kg?)`: menutup set aktif dan mencatat set selesai dengan asal `manual`, reps kamera 0, serta waktu entry. Beban/reps divalidasi sebelum mutasi. Asal set otomatis adalah `automatic`; merge antarasal memakai `mixed` dan mempertahankan source snapshots.
 - `summary()`: total set/reps, known external volume, completeness, durasi aktif, pause, dan istirahat. Durasi/rest mengecualikan pause eksplisit. Bodyweight tanpa external load dikecualikan dari volume.
 
 Jika dua set dengan beban berbeda digabung, sumber beban dipertahankan untuk menghitung volume awal. Setelah reps gabungan dikoreksi, distribusi beban per rep tidak dapat ditebak; volume ditandai incomplete sampai pengguna memasukkan beban gabungan yang sesuai. Persistence/API tahap berikutnya harus mempertahankan provenance merge ini.

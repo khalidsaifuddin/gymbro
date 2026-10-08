@@ -1,0 +1,33 @@
+{
+  "library": {
+    "name": "@mediapipe/tasks-vision",
+    "version": "1.1.0",
+    "license": "Apache-2.0",
+    "registryIntegrity": "sha512-ZJqh0wMKOINorfSffvDAxzyO1//c+FiG3IkzOdNDnLqvBB3DbMfj0bB/tys2SNf9S914sgoIbIpF4HTOi336cg==",
+    "sourceCommit": "f6988c4769278bde600efd488dfc8645432dc92b",
+    "sourceLicense": "https://raw.githubusercontent.com/google-ai-edge/mediapipe/f6988c4769278bde600efd488dfc8645432dc92b/LICENSE",
+    "installed": true
+  },
+  "model": {
+    "name": "pose_landmarker_full",
+    "version": "1",
+    "precision": "float16",
+    "source": "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",
+    "sha256": "5134a3aad27a58b93da0088d431f366da362b44e3ccfbe3462b3827a839011b1",
+    "license": "Apache-2.0",
+    "status": "verified-download",
+    "bytes": 9398198,
+    "licenseSource": "https://storage.googleapis.com/mediapipe-assets/Model%20Card%20BlazePose%20GHUM%203D.pdf",
+    "integrityNote": "SHA-256 computed from official versioned HTTPS download and pinned for subsequent installs; ZIP integrity checked. No publisher-signed checksum was supplied."
+  },
+  "evaluation": {
+    "status": "not-run",
+    "minimumSetsPerExercise": 20,
+    "minimumParticipantsPerExercise": 5,
+    "tuningEvaluationParticipantOverlapAllowed": false,
+    "minimumCorrectSetLabelFraction": 0.9,
+    "minimumSetsWithinOneRepErrorFraction": 0.9,
+    "unknownCountsAsFailure": true,
+    "useUserCorrectionsForAutomaticScore": false
+  }
+}

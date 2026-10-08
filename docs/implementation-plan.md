@@ -1,6 +1,6 @@
 # Implementation plan: Gymbro web MVP
 
-Status: tahap 1 sudah diimplementasikan; tahap lanjut mengikuti task OpenSpec. Change: `gymbro-web-mvp`. Lihat `implementation-stage-1.md`, `domain-api.md`, dan `validation-stage-1.md` untuk hasil aktual.
+Status: tahap 1 dan prototipe kamera task 2.1–2.4 sudah diimplementasikan. Corpus/evaluasi kamera nyata task 2.5–2.6 belum tersedia. Change: `gymbro-web-mvp`. Lihat plan/validation tahap 1 dan 2 serta task OpenSpec untuk batas hasil aktual; UI log lengkap/persistence/backend workout menyusul.
 
 ## Cara kerja setiap tahap
 

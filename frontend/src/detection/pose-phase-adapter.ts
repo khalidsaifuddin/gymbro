@@ -1,0 +1,124 @@
+import type { ExerciseId, Observation, Phase } from '../domain/workout';
+
+export type Landmark = { x: number; y: number; visibility?: number; presence?: number };
+export type PoseFrame = {
+  timestampMs: number;
+  landmarks: readonly Landmark[];
+  // videoWidth / videoHeight; default 1 hanya untuk fixture/perangkat persegi.
+  aspectRatio?: number;
+};
+export type PoseResult = { observation: Observation; reason: string | null };
+export type PoseOptions = {
+  exercise: ExerciseId;
+  smoothingAlpha?: number;
+  stableFrames?: number;
+  stableMs?: number;
+};
+
+// Profil dipilih pengguna; ini belum classifier jenis latihan otomatis.
+export class PosePhaseAdapter {
+  private readonly options: Required<PoseOptions>;
+  private timestamp: number | null = null;
+  private smoothed: [number, number] | null = null;
+  private candidate: Phase = 'moving';
+  private candidateAt = 0;
+  private frames = 0;
+
+  constructor(options: PoseOptions) {
+    this.options = {smoothingAlpha: .5, stableFrames: 3, stableMs: 120, ...options};
+    const {smoothingAlpha, stableFrames, stableMs} = this.options;
+    if (!Number.isFinite(smoothingAlpha) || smoothingAlpha <= 0 || smoothingAlpha > 1 ||
+        !Number.isSafeInteger(stableFrames) || stableFrames < 1 || !Number.isFinite(stableMs) || stableMs < 0) {
+      throw new Error('Invalid pose smoothing/debounce configuration');
+    }
+  }
+
+  process(frame: PoseFrame): PoseResult {
+    const now = frame.timestampMs;
+    if (!Number.isFinite(now) || now < 0 || (this.timestamp !== null && now <= this.timestamp)) {
+      return this.invalid('invalid-timestamp');
+    }
+    const gap = this.timestamp !== null && now - this.timestamp > 1000;
+    this.timestamp = now;
+    if (gap) return this.invalid('frame-gap');
+    const aspectRatio = frame.aspectRatio ?? 1;
+    if (!Number.isFinite(aspectRatio) || aspectRatio <= 0) return this.invalid('invalid-aspect-ratio');
+    const {exercise} = this.options;
+    const isSquat = exercise === 'squat';
+    const required = isSquat ? [11,12,23,24,25,26,27,28]
+      : exercise === 'machine-shoulder-press' ? [11,12,13,14,15,16,23,24,25,26,27,28]
+      : [11,12,13,14,15,16,23,24];
+    const raw = frame.landmarks;
+    if (raw.length !== 33 || required.some(index => !valid(raw[index]))) {
+      return this.invalid('landmarks-unavailable');
+    }
+    const points = raw.map(point => ({...point, x: point.x*aspectRatio}));
+    const horizontal = exercise === 'push-up' || exercise === 'bench-press';
+    if ([0,1].some(side => {
+      const shoulder = points[11+side], hip = points[23+side];
+      const dx = Math.abs(hip.x-shoulder.x), dy = Math.abs(hip.y-shoulder.y);
+      return Math.hypot(dx,dy) < .04 || (horizontal ? dy > dx*.6 : dx > dy*.6);
+    })) return this.invalid('camera-position');
+    if (horizontal && [0,1].some(side => {
+      const torsoY=(points[11+side].y+points[23+side].y)/2;
+      return exercise === 'bench-press' ? points[15+side].y >= torsoY-.01 : points[15+side].y <= torsoY+.01;
+    })) return this.invalid('camera-position');
+    if (exercise === 'machine-shoulder-press' && [0,1].some(side => {
+      const hip = points[23+side], knee = points[25+side];
+      return Math.abs(knee.y-hip.y) > Math.abs(knee.x-hip.x)*.6;
+    })) return this.invalid('camera-position');
+    if (exercise === 'dumbbell-curl' && [0,1].some(side => points[13+side].y <= points[11+side].y)) {
+      return this.invalid('camera-position');
+    }
+    const angles = [0,1].map(side => isSquat
+      ? angle(points[23+side],points[25+side],points[27+side])
+      : angle(points[11+side],points[13+side],points[15+side]));
+    if (angles.some(value => value === null)) return this.invalid('landmarks-unavailable');
+    const values = angles as [number,number];
+    if (exercise === 'dumbbell-curl' && (Math.abs(values[0]-values[1]) > 30 ||
+        this.phase(values[0]) !== this.phase(values[1]))) {
+      return this.invalid('curl-not-bilateral', false);
+    }
+    const alpha = this.options.smoothingAlpha;
+    this.smoothed = this.smoothed
+      ? [alpha*values[0]+(1-alpha)*this.smoothed[0], alpha*values[1]+(1-alpha)*this.smoothed[1]]
+      : values;
+    const phase = this.phase((this.smoothed[0]+this.smoothed[1])/2);
+    if (phase !== this.candidate || this.frames === 0) {
+      this.candidate = phase; this.candidateAt = now; this.frames = 1;
+    } else this.frames++;
+    const stable = this.frames >= this.options.stableFrames && now-this.candidateAt >= this.options.stableMs;
+    return {observation: {exercise, phase: stable ? phase : 'moving', visible: true,
+      ...(exercise === 'dumbbell-curl' ? {bilateral: true} : {})}, reason: null};
+  }
+
+  private phase(degrees: number): Phase {
+    const {exercise} = this.options;
+    if (exercise === 'machine-shoulder-press' || exercise === 'bench-press') {
+      return degrees <= 105 ? 'ready' : degrees >= 155 ? 'peak' : 'moving';
+    }
+    const ready = exercise === 'dumbbell-curl' ? 150 : 155;
+    const peak = exercise === 'dumbbell-curl' ? 65 : exercise === 'push-up' ? 100 : 105;
+    return degrees >= ready ? 'ready' : degrees <= peak ? 'peak' : 'moving';
+  }
+
+  private invalid(reason: string, bilateral?: boolean): PoseResult {
+    this.smoothed = null; this.candidate = 'moving'; this.frames = 0;
+    return {observation: {exercise: null, phase: 'moving', visible: false,
+      ...(bilateral === undefined ? {} : {bilateral})}, reason};
+  }
+}
+
+function valid(point: Landmark | undefined): point is Landmark {
+  return !!point && Number.isFinite(point.x) && Number.isFinite(point.y) &&
+    point.x >= 0 && point.x <= 1 && point.y >= 0 && point.y <= 1 &&
+    Number.isFinite(point.visibility) && point.visibility! >= .55 &&
+    (point.presence === undefined || (Number.isFinite(point.presence) && point.presence >= .55));
+}
+
+function angle(a: Landmark, b: Landmark, c: Landmark): number | null {
+  const ux=a.x-b.x, uy=a.y-b.y, vx=c.x-b.x, vy=c.y-b.y;
+  const length=Math.hypot(ux,uy)*Math.hypot(vx,vy);
+  if (length < 1e-8) return null;
+  return Math.acos(Math.max(-1,Math.min(1,(ux*vx+uy*vy)/length)))*180/Math.PI;
+}

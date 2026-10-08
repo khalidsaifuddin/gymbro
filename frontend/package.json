@@ -3,27 +3,38 @@
   "version": "0.1.0",
   "private": true,
   "main": "index.ts",
-  "engines": { "node": ">=24.0.0 <25" },
+  "engines": {
+    "node": ">=24.0.0 <25"
+  },
   "scripts": {
     "start": "expo start",
     "web": "expo start --web --port 8081",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "build:web": "expo export --platform web"
+    "build:web": "expo export --platform web",
+    "prepare:vision": "node scripts/prepare-vision-assets.mjs",
+    "test:vision": "playwright test vision.spec.ts",
+    "prebuild:web": "npm run prepare:vision",
+    "preweb": "npm run prepare:vision",
+    "test:camera": "playwright test camera-prototype.spec.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@expo/metro-runtime": "57.0.16",
+    "@mediapipe/tasks-vision": "1.1.0",
     "expo": "57.0.27",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
-    "react-native-web": "0.21.2",
-    "@expo/metro-runtime": "57.0.16"
+    "react-native-web": "0.21.2"
   },
   "devDependencies": {
-    "typescript": "7.0.2",
-    "vitest": "5.0.3",
+    "@playwright/test": "1.64.0",
+    "@types/node": "26.6.4",
     "@types/react": "19.3.0",
-    "@types/node": "26.6.4"
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2",
+    "vitest": "5.0.3"
   }
 }
