@@ -3,6 +3,7 @@ package workoutrepo
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"github.com/khalidsaifuddin/gymbro/backend/core/entity"
 	"github.com/khalidsaifuddin/gymbro/backend/pkg/activity"
@@ -57,7 +58,7 @@ func (r *Repository) Save(ctx context.Context, owner string, w entity.Workout, b
 				return entity.ErrConflict
 			}
 			w.Revision = base + 1
-			err := tx.Model(&workoutModel{}).Where("id = ? AND user_id = ?", w.ID, owner).Updates(map[string]any{"started_at": w.StartedAt, "finished_at": w.FinishedAt, "duration_ms": w.DurationMS, "paused_duration_ms": w.PausedDurationMS, "rest_duration_ms": w.RestDurationMS, "status": w.Status, "revision": w.Revision, "updated_at": time.Now().UTC()}).Error
+			err := tx.Model(&workoutModel{}).Where("id = ? AND user_id = ?", w.ID, owner).Updates(map[string]any{"captured_at": header(w).CapturedAt, "pause_intervals": header(w).PauseIntervals, "started_at": w.StartedAt, "finished_at": w.FinishedAt, "duration_ms": w.DurationMS, "paused_duration_ms": w.PausedDurationMS, "rest_duration_ms": w.RestDurationMS, "status": w.Status, "revision": w.Revision, "updated_at": time.Now().UTC()}).Error
 			if err != nil {
 				return err
 			}
@@ -86,7 +87,12 @@ func (r *Repository) Save(ctx context.Context, owner string, w entity.Workout, b
 			typeName = "workout.created"
 			occurred = &w.StartedAt
 		}
-		if err := activity.Record(tx, "workout", activity.Event{Type: typeName, ActorID: &owner, WorkoutID: &w.ID, OccurredAt: occurred, Metadata: map[string]any{"revision": w.Revision}}); err != nil {
+		var correlation *string
+		if mutation, ok := entity.MutationFrom(ctx); ok {
+			occurred = &mutation.OccurredAt
+			correlation = &mutation.ID
+		}
+		if err := activity.Record(tx, "workout", activity.Event{CorrelationID: correlation, Type: typeName, ActorID: &owner, WorkoutID: &w.ID, OccurredAt: occurred, Metadata: map[string]any{"revision": w.Revision}}); err != nil {
 			return err
 		}
 		var err error
@@ -119,6 +125,9 @@ func (r *Repository) find(ctx context.Context, owner, id string) (entity.Workout
 }
 func (r *Repository) hydrate(ctx context.Context, m workoutModel) (entity.Workout, error) {
 	w := m.domain()
+	if err := json.Unmarshal(m.PauseIntervals, &w.PauseIntervals); err != nil {
+		return w, err
+	}
 	var exercises []exerciseModel
 	if err := r.db.WithContext(ctx).Select("public.workout_exercises.*, ref.exercises.equipment").Joins("JOIN ref.exercises ON ref.exercises.id=public.workout_exercises.exercise_id").Where("workout_id = ?", m.ID).Order("position").Find(&exercises).Error; err != nil {
 		return w, err
@@ -185,10 +194,16 @@ func (r *Repository) Delete(ctx context.Context, owner, id string, base int64) (
 		}
 		revision = base + 1
 		now := time.Now().UTC()
-		if err := tx.Model(&workoutModel{}).Where("id = ? AND user_id = ?", id, owner).Updates(map[string]any{"status": "deleted", "deleted_at": now, "revision": revision, "started_at": time.Unix(0, 0).UTC(), "finished_at": nil, "duration_ms": 0, "paused_duration_ms": 0, "rest_duration_ms": 0, "created_at": now, "updated_at": now}).Error; err != nil {
+		if err := tx.Model(&workoutModel{}).Where("id = ? AND user_id = ?", id, owner).Updates(map[string]any{"pause_intervals": []byte("[]"), "captured_at": now, "status": "deleted", "deleted_at": now, "revision": revision, "started_at": time.Unix(0, 0).UTC(), "finished_at": nil, "duration_ms": 0, "paused_duration_ms": 0, "rest_duration_ms": 0, "created_at": now, "updated_at": now}).Error; err != nil {
 			return err
 		}
-		return activity.Record(tx, "workout", activity.Event{Type: "workout.deleted", ActorID: &owner, WorkoutID: &id, Metadata: map[string]any{"revision": revision}})
+		var occurred *time.Time
+		var correlation *string
+		if mutation, ok := entity.MutationFrom(ctx); ok {
+			occurred = &mutation.OccurredAt
+			correlation = &mutation.ID
+		}
+		return activity.Record(tx, "workout", activity.Event{OccurredAt: occurred, CorrelationID: correlation, Type: "workout.deleted", ActorID: &owner, WorkoutID: &id, Metadata: map[string]any{"revision": revision}})
 	})
 	return revision, err
 }

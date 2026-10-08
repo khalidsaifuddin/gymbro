@@ -1,6 +1,8 @@
 import {useEffect,useRef,useState} from 'react';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import {type ExerciseId,type WorkoutSet,type WorkoutSummary} from '../domain/workout';
+import AccountPanel from './AccountPanel.web';
+import {useAccount} from '../sync/use-account.web';
 import {useLocalWorkout} from '../storage/use-local-workout.web';
 import WorkoutLog,{loadLabel} from './WorkoutLog.web';
 import type {LocalWorkout} from '../storage/workout-store';
@@ -18,7 +20,7 @@ function Button({label,onPress,disabled=false}:{label:string;onPress:()=>void;di
     style={[styles.button,disabled&&styles.disabled]}><Text style={styles.buttonLabel}>{label}</Text></Pressable>;
 }
 export default function CameraPrototype() {
-  const local=useLocalWorkout(),{workout,getWorkout}=local;
+  const account=useAccount(),local=useLocalWorkout(account.user?.id??null),{workout,getWorkout}=local;
   const offlineStatus=useOfflineCache();
   const video=useRef<HTMLVideoElement>(null);
   const detector=useRef<BrowserPoseDetector|null>(null), recognizer=useRef(new TemporalExerciseRecognizer());
@@ -36,6 +38,7 @@ export default function CameraPrototype() {
   const [running,setRunning]=useState(false),[loading,setLoading]=useState(false),[paused,setPaused]=useState(false);
   const [finished,setFinished]=useState(false),[recognized,setRecognized]=useState<ExerciseId|null>(null);
   const [summary,setSummary]=useState(initial),[sets,setSets]=useState<WorkoutSet[]>([]);
+  const [deleteId,setDeleteId]=useState<string|null>(null);
   const [mode,setMode]=useState<'camera'|'log'>('camera');
   const refresh=(checkpoint=false) => {
     local.refresh(checkpoint);
@@ -108,7 +111,7 @@ export default function CameraPrototype() {
             if (pose) {
               lastObservation.current=Date.now();
               const result=recognizer.current.process(pose);
-              workout.current!.observe(result.observation);setRecognized(result.observation.exercise);
+              workout.current!.observe({...result.observation,labelSource:profile.current==='auto'?'automatic':'profile'});setRecognized(result.observation.exercise);
               setStatus(result.reason==='camera-position'?'Sesuaikan kamera agar sendi terlihat.'
                 :result.reason==='curl-not-bilateral'?'Gerakkan kedua lengan serempak atau catat set manual.'
                 :result.reason==='exercise-unknown'||result.reason==='exercise-ambiguous'?'Gerakan belum dikenali. Pilih profil latihan atau catat set manual.'
@@ -160,11 +163,12 @@ export default function CameraPrototype() {
     setFinished(workout.current!.isFinished());setPaused(!workout.current!.isFinished());setRunning(false);
     setStatus(workout.current!.isFinished()?'Workout selesai':'Sesi dipulihkan dalam keadaan jeda. Aktifkan kamera kembali atau lanjutkan manual.');refresh();
   };
-  const controlsDisabled=!local.ready||!!local.recovery;
+  const controlsDisabled=!account.ready||!local.ready||!!local.recovery;
   const active=sets.find(set=>set.endedAt===null),last=sets.at(-1);
   const restTarget=local.preferences.current.restSeconds[last?.exercise??exercise]??120;
   const rest=Math.floor((workout.current?.restElapsedMs()??0)/1000);
   const guidance=choice==='auto'?'Satu orang, kamera diam, seluruh tubuh terlihat. Pilih profil latihan untuk panduan posisi khusus.':cameraGuides[choice];
+  const resetWorkout=()=>{stopResources();recorder.current=null;recordOptIn.current=false;setRecordEnabled(false);setRecordNotice('');local.newWorkout();setFinished(false);setPaused(false);setRecognized(null);setPendingChoice(null);setPendingAuto(null);profile.current='auto';setChoice('auto');setExercise('squat');setReps('10');setLoad('');setStatus('Kamera belum aktif');refresh();};
   return <View style={styles.card}>
     <style>{`button,input,select{font:inherit;font-family:system-ui,sans-serif}label,.workout-log{font-family:system-ui,sans-serif} .workout-log button{background:#e9f3ff;border:0;border-radius:8px;padding:10px;color:#1268c8;cursor:pointer} .exercise-card{border:1px solid #e2e9f2;border-radius:14px;padding:16px;margin:16px 0} .exercise-card h2{font-size:20px;color:#1268c8;margin:0 0 8px} .exercise-card table{border-collapse:collapse;width:100%;min-width:540px} .exercise-card th{text-align:left;color:#63708a;font-size:13px;padding:12px 4px} .exercise-card td{padding:8px 4px;border-top:1px solid #edf1f7} .exercise-card input[type=number]{width:74px;box-sizing:border-box;border:1px solid #cbd5e1;padding:10px;border-radius:8px} .exercise-card small{display:block;color:#63708a;font-size:12px;padding-top:6px}`}</style>
     <Text style={styles.heading}>{mode==='camera'?'Workout dengan kamera':'Log workout'}</Text>
@@ -178,6 +182,7 @@ export default function CameraPrototype() {
     {clips.length>0&&<View style={styles.summary}>{clips.map((file,i)=><a key={file.url} href={file.url} download={`gymbro-segmen-${i+1}.${file.extension}`}>Simpan segmen {i+1}</a>)}
       <Button label="Buang rekaman" onPress={()=>{releaseClips();void recorder.current?.discard();setRecordNotice('Rekaman dibuang. Hasil workout tetap tersimpan.');}}/>
     </View>}
+    <AccountPanel account={account} disabled={!local.ready||!!workout.current&&!finished||recordBusy||clips.length>0} onReset={resetWorkout} beforeAction={local.flush}/>
     {local.recovery&&<View style={styles.summary}><Text style={styles.heading}>Sesi belum selesai ditemukan</Text><Text>Pulihkan catatan terverifikasi. Video sebelumnya tidak dapat dipulihkan.</Text>
       <Button label="Pulihkan sesi" onPress={()=>openRecord(local.recovery!)}/></View>}
     <View style={styles.actions}><Button label="Mode kamera" onPress={()=>setMode('camera')}/><Button label="Mode log" onPress={()=>setMode('log')}/></View>
@@ -228,10 +233,10 @@ export default function CameraPrototype() {
     </View>
     <Button label="Selesaikan workout" onPress={finish} disabled={controlsDisabled||finished}/>
     <Button label="Ekspor hasil JSON" onPress={local.exportResults} disabled={!workout.current}/>
-    {finished&&<Button label="Workout baru" disabled={clips.length>0||recordBusy} onPress={()=>{stopResources();recorder.current=null;recordOptIn.current=false;setRecordEnabled(false);setRecordNotice('');local.newWorkout();setFinished(false);setPaused(false);setRecognized(null);setPendingChoice(null);setPendingAuto(null);profile.current='auto';setChoice('auto');setExercise('squat');setReps('10');setLoad('');setStatus('Kamera belum aktif');refresh();}}/>}
+    {finished&&<Button label="Workout baru" disabled={clips.length>0||recordBusy} onPress={resetWorkout}/>}
     {clips.length>0&&<Text>Simpan file yang diinginkan, lalu buang salinan sementara sebelum workout baru.</Text>}
     {local.history.length>0&&<View style={styles.summary}><Text style={styles.heading}>Riwayat di perangkat</Text>
-      {local.history.map(h=><View key={h.id}><Text>{new Date(h.snapshot.startedAt).toLocaleString('id-ID')} · {h.snapshot.sets.reduce((n,s)=>n+s.reps,0)} reps</Text><Button label="Lihat workout" onPress={()=>openRecord(h)} disabled={!!workout.current&&!finished||!!local.recovery||recordBusy||clips.length>0}/></View>)}
+      {local.history.map(h=><View key={h.id}><Text>{new Date(h.snapshot.startedAt).toLocaleString('id-ID')} · {h.snapshot.sets.reduce((n,s)=>n+s.reps,0)} reps</Text><Button label="Lihat workout" onPress={()=>openRecord(h)} disabled={!!workout.current&&!finished||!!local.recovery||recordBusy||clips.length>0}/><Button label="Hapus workout" onPress={()=>setDeleteId(h.id)} disabled={!!workout.current&&!finished||recordBusy||clips.length>0}/>{deleteId===h.id&&<><Text>Hapus workout ini dari perangkat dan akun terkait?</Text><Button label="Konfirmasi hapus workout" onPress={()=>{void local.flush().then(async()=>{const binding=(await account.store.bindings()).find(b=>b.workoutId===h.id);if(binding){await account.store.deleteWorkout(h,binding.ownerId);await account.flush();}else await account.store.remove(h.id,h.revision);setDeleteId(null);resetWorkout();await local.reloadHistory();}).catch(()=>setStatus('Penghapusan gagal; hasil tetap tersimpan'));}}/><Button label="Batal hapus workout" onPress={()=>setDeleteId(null)}/></>}</View>)}
     </View>}
   </View>;
 }

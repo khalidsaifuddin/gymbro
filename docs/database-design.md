@@ -1,6 +1,6 @@
 # Desain PostgreSQL Gymbro
 
-Status: migration/repository tiga schema tersedia dan diuji pada PostgreSQL nyata. Lihat `validation-stage-4.md` dan `database-operations.md`. API/auth/sync akun mengikuti tahap 5.
+Status: migration/repository tiga schema tersedia dan diuji pada PostgreSQL nyata. Lihat `validation-stage-4.md` dan `database-operations.md`. API/auth/sync akun tersedia pada tahap 5; Google eksternal masih memerlukan OAuth. Lihat api-contract.md dan validation-stage-5.md.
 
 ## Pembagian schema
 
@@ -9,9 +9,9 @@ Status: migration/repository tiga schema tersedia dan diuji pada PostgreSQL nyat
 | `ref.users` | Master akun: UUID `id`, unique `google_sub`, display name, timestamps |
 | `ref.exercises` | Master latihan: UUID, unique slug, nama, equipment/load convention, kemampuan dan versi aturan deteksi |
 | `ref.exercise_assets` | Metadata aset: exercise FK, path, MIME, pembuat, lisensi, atribusi, source URL, checksum |
-| `public.workouts` | UUID dari perangkat, owner FK, start/finish, durasi, pause duration, status, revision, timestamps/deleted marker |
+| `public.workouts` | UUID dari perangkat, owner FK, start/capture/finish, pause intervals JSONB, durasi, pause duration, status, revision, timestamps/deleted marker |
 | `public.workout_exercises` | UUID, workout FK, exercise FK, position, notes, rest target default 120 detik |
-| `public.workout_sets` | UUID, workout-exercise FK, position, detected/final reps, rep source, detected exercise, recognition status, load kg, implement count, waktu set/rest |
+| `public.workout_sets` | UUID, workout-exercise FK, position, detected/final reps, rep source, detected exercise, recognition status/label source, merged provenance JSONB, load kg, implement count, waktu set/rest |
 | `public.auth_sessions` | UUID, user FK, unique token hash, expiry, timestamps |
 | `public.sync_mutations` | Composite key user/mutation UUID, request hash, target workout UUID, resulting revision, outcome, processed time |
 | `public.schema_migrations` | Ledger operasional versi/checksum migration, bukan activity log |

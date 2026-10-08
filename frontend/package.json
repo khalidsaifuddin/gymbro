@@ -19,7 +19,8 @@
     "preweb": "npm run prepare:vision",
     "test:camera": "playwright test camera-prototype.spec.ts",
     "test:e2e": "playwright test",
-    "postbuild:web": "node scripts/prepare-offline.mjs"
+    "postbuild:web": "node scripts/prepare-offline.mjs",
+    "test:account": "playwright test --config=playwright.account.config.ts"
   },
   "dependencies": {
     "@expo/metro-runtime": "57.0.16",

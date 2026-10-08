@@ -16,7 +16,7 @@ export function validateSnapshot(value:unknown):SessionSnapshot {
   const start=s.startedAt,end=s.finishedAt??s.savedAt;
   const set=(v:unknown,depth=0):void=>{
     if(depth>20)return fail();
-    const r=object(v,['id','exercise','detectedReps','origin','reps','startedAt','endedAt','lastRepAt','loadKg','implementCount','sourceIds','mergedFrom','loadEdited']);
+    const r=object(v,['id','exercise','detectedReps','origin','reps','startedAt','endedAt','lastRepAt','loadKg','implementCount','sourceIds','mergedFrom','loadEdited','labelSource','rawExercise']);
     if(typeof r.id!=='string'||!r.id||!['squat','push-up','dumbbell-curl','machine-shoulder-press','bench-press'].includes(String(r.exercise))||
       !['automatic','manual','mixed'].includes(String(r.origin))||!count(r.reps)||!count(r.detectedReps)||
       !time(r.startedAt)||r.startedAt<start||!time(r.lastRepAt)||r.lastRepAt<r.startedAt||r.lastRepAt>end||
@@ -24,7 +24,10 @@ export function validateSnapshot(value:unknown):SessionSnapshot {
       !(r.loadKg===null||(typeof r.loadKg==='number'&&Number.isFinite(r.loadKg)&&r.loadKg>=0&&r.loadKg<=99999.999))||
       !count(r.implementCount)||r.implementCount<1||r.implementCount>32767||
       !Array.isArray(r.sourceIds)||!r.sourceIds.length||r.sourceIds.some(id=>typeof id!=='string'||!id)||
-      (r.loadEdited!==undefined&&typeof r.loadEdited!=='boolean'))return fail();
+      (r.loadEdited!==undefined&&typeof r.loadEdited!=='boolean')||
+      (r.labelSource!==undefined&&!['automatic','profile','manual','mixed'].includes(String(r.labelSource)))||
+      (r.rawExercise!==undefined&&r.rawExercise!==null&&!['squat','push-up','dumbbell-curl','machine-shoulder-press','bench-press'].includes(String(r.rawExercise)))||
+      (r.rawExercise!=null&&r.labelSource!=='automatic'))return fail();
     if(r.mergedFrom!==undefined){if(!Array.isArray(r.mergedFrom)||r.mergedFrom.length<2)return fail();r.mergedFrom.forEach(x=>set(x,depth+1));}
   };
   s.sets.forEach(v=>set(v));

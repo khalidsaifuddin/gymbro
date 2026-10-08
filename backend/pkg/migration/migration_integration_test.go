@@ -3,6 +3,8 @@
 package migration
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"github.com/khalidsaifuddin/gymbro/backend/internal/testdb"
 	"testing"
 	"time"
@@ -117,5 +119,60 @@ func TestUTCPartitionBoundsWithNonUTCSessionTimezone(t *testing.T) {
 		if err := db.Raw(`SELECT tableoid::regclass::text FROM log.workout_events WHERE recorded_at=?`, point).Scan(&table).Error; err != nil || table != "log.workout_events_"+point.Format("2006_01") {
 			t.Fatalf("UTC boundary route: %s %v", table, err)
 		}
+	}
+}
+
+func TestPauseAndRawLabelColumnsForSync(t *testing.T) {
+	db := testdb.New(t)
+	if err := Up(db); err != nil {
+		t.Fatal(err)
+	}
+	for _, column := range []struct{ table, name string }{{"workouts", "captured_at"}, {"workouts", "pause_intervals"}, {"workout_sets", "label_source"}} {
+		var exists bool
+		if err := db.Raw(`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name=? AND column_name=?)`, column.table, column.name).Scan(&exists).Error; err != nil || !exists {
+			t.Fatalf("missing sync column %s.%s: %v", column.table, column.name, err)
+		}
+	}
+}
+
+func TestUpgradeKeepsExistingWorkoutAndBackfillsSnapshotColumns(t *testing.T) {
+	db := testdb.New(t)
+	if err := db.Exec(`CREATE TABLE public.schema_migrations(version INTEGER PRIMARY KEY,name TEXT NOT NULL,sha256 TEXT NOT NULL,applied_at TIMESTAMPTZ NOT NULL DEFAULT now())`).Error; err != nil {
+		t.Fatal(err)
+	}
+	for i, file := range []string{"sql/001_schema.up.sql", "sql/002_activity.up.sql"} {
+		body, err := scripts.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = db.Exec(string(body)).Error; err != nil {
+			t.Fatal(err)
+		}
+		hash := fmt.Sprintf("%x", sha256.Sum256(body))
+		if err = db.Exec(`INSERT INTO public.schema_migrations(version,name,sha256) VALUES(?,?,?)`, i+1, file, hash).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	owner, wid := "00000000-0000-4000-8000-000000000011", "00000000-0000-4000-8000-000000000012"
+	if err := db.Exec(`INSERT INTO ref.users(id,google_sub,display_name) VALUES(?,'upgrade-fixture','Fixture')`, owner).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec(`INSERT INTO public.workouts(id,user_id,started_at,status,revision) VALUES(?,?,now()-interval '1 day','active',7)`, wid, owner).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := Up(db); err != nil {
+		t.Fatal(err)
+	}
+	var row struct {
+		ID             string
+		Revision       int64
+		CapturedAt     time.Time
+		PauseIntervals string
+	}
+	if err := db.Raw(`SELECT id,revision,captured_at,pause_intervals::text FROM public.workouts WHERE id=?`, wid).Scan(&row).Error; err != nil || row.ID != wid || row.Revision != 7 || row.CapturedAt.IsZero() || row.PauseIntervals != "[]" {
+		t.Fatalf("upgrade lost/backfill data: %+v %v", row, err)
+	}
+	if err := Up(db); err != nil {
+		t.Fatal(err)
 	}
 }

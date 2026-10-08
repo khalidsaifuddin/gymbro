@@ -21,12 +21,18 @@ type Workout struct {
 	OwnerID          string            `json:"-"`
 	Revision         int64             `json:"revision"`
 	StartedAt        time.Time         `json:"started_at"`
+	CapturedAt       *time.Time        `json:"captured_at"`
+	PauseIntervals   []PauseInterval   `json:"pause_intervals"`
 	FinishedAt       *time.Time        `json:"finished_at"`
 	DurationMS       int64             `json:"duration_ms"`
 	PausedDurationMS int64             `json:"paused_duration_ms"`
 	RestDurationMS   int64             `json:"rest_duration_ms"`
 	Status           string            `json:"status"`
 	Exercises        []WorkoutExercise `json:"exercises"`
+}
+type PauseInterval struct {
+	Start time.Time  `json:"start"`
+	End   *time.Time `json:"end"`
 }
 type WorkoutExercise struct {
 	ID                string       `json:"id"`
@@ -38,14 +44,21 @@ type WorkoutExercise struct {
 	Sets              []WorkoutSet `json:"sets"`
 }
 type SetSource struct {
-	ID             string      `json:"id"`
-	Reps           int64       `json:"reps"`
-	DetectedReps   int64       `json:"detected_reps"`
-	LoadKG         *string     `json:"load_kg"`
-	ImplementCount int         `json:"implement_count"`
-	SourceIDs      []string    `json:"source_ids"`
-	MergedFrom     []SetSource `json:"merged_from"`
-	LoadEdited     bool        `json:"load_edited"`
+	ID               string      `json:"id"`
+	Reps             int64       `json:"reps"`
+	DetectedReps     int64       `json:"detected_reps"`
+	LoadKG           *string     `json:"load_kg"`
+	ImplementCount   int         `json:"implement_count"`
+	SourceIDs        []string    `json:"source_ids"`
+	MergedFrom       []SetSource `json:"merged_from"`
+	LoadEdited       bool        `json:"load_edited"`
+	LabelSource      string      `json:"label_source,omitempty"`
+	SourceExerciseID string      `json:"source_exercise_id,omitempty"`
+	SourceOrigin     string      `json:"source_origin,omitempty"`
+	SourceStartedAt  *time.Time  `json:"source_started_at,omitempty"`
+	SourceEndedAt    *time.Time  `json:"source_ended_at,omitempty"`
+	SourceLastRepAt  *time.Time  `json:"source_last_rep_at,omitempty"`
+	RawExerciseID    *string     `json:"raw_exercise_id,omitempty"`
 }
 type WorkoutSet struct {
 	SetSource
@@ -82,7 +95,38 @@ func (w Workout) Validate() error {
 	if !ValidID(w.ID) || !ValidID(w.OwnerID) || w.StartedAt.IsZero() || w.DurationMS < 0 || w.PausedDurationMS < 0 || w.RestDurationMS < 0 || (w.Status != "active" && w.Status != "paused" && w.Status != "completed") || (w.FinishedAt != nil && w.FinishedAt.Before(w.StartedAt)) || (w.Status == "completed" && w.FinishedAt == nil) {
 		return ErrInvalid
 	}
+	if w.CapturedAt != nil {
+		end := *w.CapturedAt
+		if end.Before(w.StartedAt) || (w.FinishedAt != nil && w.FinishedAt.After(end)) {
+			return ErrInvalid
+		}
+		if w.FinishedAt != nil {
+			end = *w.FinishedAt
+		}
+		previous := w.StartedAt
+		var paused int64
+		for i, p := range w.PauseIntervals {
+			stop := end
+			if p.Start.Before(previous) || p.Start.After(end) {
+				return ErrInvalid
+			}
+			if p.End != nil {
+				stop = *p.End
+				if stop.Before(p.Start) || stop.After(end) {
+					return ErrInvalid
+				}
+			} else if i != len(w.PauseIntervals)-1 || w.Status != "paused" {
+				return ErrInvalid
+			}
+			paused += stop.Sub(p.Start).Milliseconds()
+			previous = stop
+		}
+		if paused != w.PausedDurationMS || end.Sub(w.StartedAt).Milliseconds()-paused != w.DurationMS {
+			return ErrInvalid
+		}
+	}
 	ids := map[string]bool{w.ID: true}
+	globalPositions := map[int]bool{}
 	positions := map[int]bool{}
 	for _, e := range w.Exercises {
 		if !ValidID(e.ID) || !ValidID(e.ExerciseID) || ids[e.ID] || e.Position < 0 || positions[e.Position] || len([]rune(e.Notes)) > 2048 || e.RestTargetSeconds < 0 || e.RestTargetSeconds > 3600 {
@@ -95,7 +139,7 @@ func (w Workout) Validate() error {
 			if err := validateSource(s.SetSource, 0); err != nil {
 				return err
 			}
-			if ids[s.ID] || s.Position < 0 || setPositions[s.Position] || s.StartedAt.IsZero() || s.StartedAt.Before(w.StartedAt) || s.LastRepAt.Before(s.StartedAt) || (s.EndedAt != nil && s.EndedAt.Before(s.LastRepAt)) || (w.FinishedAt != nil && (s.EndedAt == nil || s.EndedAt.After(*w.FinishedAt))) || s.RestDurationMS < 0 {
+			if ids[s.ID] || s.Position < 0 || setPositions[s.Position] || globalPositions[s.Position] || s.StartedAt.IsZero() || s.StartedAt.Before(w.StartedAt) || s.LastRepAt.Before(s.StartedAt) || (s.EndedAt != nil && s.EndedAt.Before(s.LastRepAt)) || (w.FinishedAt != nil && (s.EndedAt == nil || s.EndedAt.After(*w.FinishedAt))) || s.RestDurationMS < 0 {
 				return ErrInvalid
 			}
 			if s.RepSource != "automatic" && s.RepSource != "manual" && s.RepSource != "mixed" {
@@ -104,17 +148,36 @@ func (w Workout) Validate() error {
 			if s.RecognitionStatus != "known" && s.RecognitionStatus != "unknown" && s.RecognitionStatus != "manual" {
 				return ErrInvalid
 			}
+			if s.LabelSource != "" && s.LabelSource != "unknown" && s.LabelSource != "automatic" && s.DetectedExerciseID != nil {
+				return ErrInvalid
+			}
+			if s.LabelSource == "automatic" && (s.DetectedExerciseID == nil || s.RawExerciseID == nil || *s.DetectedExerciseID != *s.RawExerciseID || s.RecognitionStatus != "known") {
+				return ErrInvalid
+			}
 			if s.DetectedExerciseID != nil && !ValidID(*s.DetectedExerciseID) {
 				return ErrInvalid
 			}
 			ids[s.ID] = true
 			setPositions[s.Position] = true
+			globalPositions[s.Position] = true
 		}
 	}
 	return nil
 }
 func validateSource(s SetSource, depth int) error {
 	if depth > 20 || !ValidID(s.ID) || s.Reps < 0 || s.Reps > 2147483647 || s.DetectedReps < 0 || s.DetectedReps > 2147483647 || s.ImplementCount < 1 || s.ImplementCount > 32767 || len(s.SourceIDs) == 0 {
+		return ErrInvalid
+	}
+	if s.LabelSource != "" && s.LabelSource != "unknown" && s.LabelSource != "automatic" && s.LabelSource != "profile" && s.LabelSource != "manual" && s.LabelSource != "mixed" {
+		return ErrInvalid
+	}
+	if s.RawExerciseID != nil && (!ValidID(*s.RawExerciseID) || s.LabelSource != "automatic") {
+		return ErrInvalid
+	}
+	if s.SourceOrigin != "" && s.SourceOrigin != "automatic" && s.SourceOrigin != "manual" && s.SourceOrigin != "mixed" {
+		return ErrInvalid
+	}
+	if s.SourceExerciseID != "" && !ValidID(s.SourceExerciseID) {
 		return ErrInvalid
 	}
 	if s.LoadKG != nil {

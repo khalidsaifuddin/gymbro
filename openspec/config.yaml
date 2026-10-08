@@ -20,11 +20,11 @@ context: |
   Continue workouts offline after app/model loading and sync results when connectivity returns.
   Active workout UI includes camera, recognized exercise, set/rep counters, rest timer, camera warnings, pause, and finish.
   User supplied Hevy as a workout-tracking UI reference; verify asset licenses before adopting exercise animations.
-  Produce original editable SVG demonstrations for all five exercises, licensed CC-BY-4.0; these assets do not exist yet.
+  Original editable SVG demonstrations for all five exercises are available in frontend/public/exercises, licensed CC-BY-4.0; preserve source/attribution.
   Default rest target is 2 minutes, editable per exercise; users may start sooner. Rest starts at the end of the last repetition.
   Loads use kg: barbell includes bar, dumbbell input is per dumbbell, machine follows selected load. Volume is reps times total external load; no bodyweight volume estimate.
   Read docs/product-requirements.md and GLOSSARY.md for agreed requirements and terminology.
-  MVP product decisions are settled; implementation and accuracy are not yet verified.
+  MVP web flows are implemented and automatically tested; see docs/validation-stage-5.md. Real Google login requires OAuth configuration; physical-device/accuracy validation follows runnable MVP per user instruction.
   Tracking loss suspends counting and automatic set closure, retaining verified reps and discarding interrupted cycles.
   Automatic exercise changes are allowed between sets; confirmation is required during an active set.
   Automatic dumbbell curl supports simultaneous bilateral movement; alternating/unilateral curl is manual in MVP.

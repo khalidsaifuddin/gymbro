@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({outputDir:'./test-results-account',testDir:'./e2e',testMatch:'account-sync.spec.ts',workers:1,timeout:60000,expect:{timeout:10000},use:{browserName:'chromium',headless:true,baseURL:'http://127.0.0.1:8093'},webServer:{command:'bash ../backend/scripts/run-e2e.sh',url:'http://127.0.0.1:8093/health',reuseExistingServer:false,timeout:120000}});

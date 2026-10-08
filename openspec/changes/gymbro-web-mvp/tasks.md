@@ -44,22 +44,22 @@ Checkbox mencatat pekerjaan yang telah selesai atau masih terbuka. Ikuti `AGENTS
 
 ## 5. API, Google login, riwayat dan sinkronisasi
 
-- [ ] 5.1 Tulis plan API/auth/outbox dengan kontrak request/response dan aturan revisi; verifikasi ownership selalu berasal dari sesi server.
-- [ ] 5.2 RED → GREEN → REFACTOR: katalog dan owner-scoped history/mutation handlers serta use cases; verifikasi validasi nested IDs dan rejection akses akun lain.
-- [ ] 5.3 RED → GREEN → REFACTOR: verified Google identity, state/nonce/PKCE, session hashing/expiry/logout dan CSRF; verifikasi penolakan identitas/sesi tidak sah serta tidak ada token plaintext di DB/log.
+- [x] 5.1 Tulis plan API/auth/outbox dengan kontrak request/response dan aturan revisi; verifikasi ownership selalu berasal dari sesi server.
+- [x] 5.2 RED → GREEN → REFACTOR: katalog dan owner-scoped history/mutation handlers serta use cases; verifikasi validasi nested IDs dan rejection akses akun lain.
+- [x] 5.3 RED → GREEN → REFACTOR: verified Google identity, state/nonce/PKCE, session hashing/expiry/logout dan CSRF; verifikasi penolakan identitas/sesi tidak sah serta tidak ada token plaintext di DB/log.
 - [ ] 5.4 Periksa binding/config names yang tersedia sebelum menambahkan kebutuhan OAuth; setelah nilai sah tersedia, jalankan login Google end-to-end dan dokumentasikan callback/config tanpa secret. Catat blocker bila belum tersedia.
-- [ ] 5.5 RED: PostgreSQL concurrency tests retry outcome identik, reuse mutation ID beda payload, revision conflict, dan transaksi atomic; verifikasi failures sebelum sync handler.
-- [ ] 5.6 GREEN/REFACTOR: idempotent mutation protocol dan outbox client dengan explicit conflict choice; verifikasi 5.5 lulus, retry respons hilang tidak duplikat, dan dua perangkat tidak overwrite diam-diam.
-- [ ] 5.7 RED → GREEN → REFACTOR: opt-in guest import, workout/account deletion, log identifier cleanup, session invalidation, dan stale-sync tombstone; verifikasi data terhapus tidak muncul kembali.
-- [ ] 5.8 Dokumentasikan kontrak API, errors/revisions, dan auth lifecycle; verifikasi contoh request sesuai integration tests serta history sesudah koreksi cocok dengan summary.
+- [x] 5.5 RED: PostgreSQL concurrency tests retry outcome identik, reuse mutation ID beda payload, revision conflict, dan transaksi atomic; verifikasi failures sebelum sync handler.
+- [x] 5.6 GREEN/REFACTOR: idempotent mutation protocol dan outbox client dengan explicit conflict choice; verifikasi 5.5 lulus, retry respons hilang tidak duplikat, dan dua perangkat tidak overwrite diam-diam.
+- [x] 5.7 RED → GREEN → REFACTOR: opt-in guest import, workout/account deletion, log identifier cleanup, session invalidation, dan stale-sync tombstone; verifikasi data terhapus tidak muncul kembali.
+- [x] 5.8 Dokumentasikan kontrak API, errors/revisions, dan auth lifecycle; verifikasi contoh request sesuai integration tests serta history sesudah koreksi cocok dengan summary.
 
 ## 6. Validasi integrasi dan perangkat
 
-- [ ] 6.1 Tulis plan end-to-end serta matriks Chrome/Edge desktop dan Chrome Android; verifikasi setiap capability memiliki alur penerimaan dan jenis bukti yang sesuai.
-- [ ] 6.2 RED → GREEN → REFACTOR: E2E lintas domain/UI/API untuk guest-to-account import, offline/reconnect, konflik dua client, serta delete/stale sync; verifikasi browser assertions dan persistence database sebenarnya.
-- [ ] 6.3 Jalankan build/type check frontend serta tes Go, PostgreSQL integration, dan race detector jika didukung; deliver exit status, jumlah tes, serta failed/skipped/unrun yang terpisah.
+- [x] 6.1 Tulis plan end-to-end serta matriks Chrome/Edge desktop dan Chrome Android; verifikasi setiap capability memiliki alur penerimaan dan jenis bukti yang sesuai.
+- [x] 6.2 RED → GREEN → REFACTOR: E2E lintas domain/UI/API untuk guest-to-account import, offline/reconnect, konflik dua client, serta delete/stale sync; verifikasi browser assertions dan persistence database sebenarnya.
+- [x] 6.3 Jalankan build/type check frontend serta tes Go, PostgreSQL integration, dan race detector jika didukung; deliver exit status, jumlah tes, serta failed/skipped/unrun yang terpisah.
 - [ ] 6.4 Jalankan kamera/recording/pause/offline pada perangkat nyata dan evaluasi ulang lima gerakan setelah perubahan inference; deliver performa terukur dan bukti gate akurasi tanpa koreksi manual.
-- [ ] 6.5 Perbarui setup/start instructions berdasarkan command yang telah dijalankan; verifikasi cold start/readiness requests, list konfigurasi yang belum tersedia, dan jangan klaim deployment/native/Safari selesai.
+- [x] 6.5 Perbarui setup/start instructions berdasarkan command yang telah dijalankan; verifikasi cold start/readiness requests, list konfigurasi yang belum tersedia, dan jangan klaim deployment/native/Safari selesai.
 
 ## Workflow follow-up
 

@@ -21,14 +21,15 @@ function validateRecord(value:LocalWorkout):LocalWorkout {
 export class WorkoutStore {
  private database:Promise<IDBDatabase>|null=null;
  constructor(private factory:IDBFactory|undefined,private name='gymbro-local-v1'){}
- private open():Promise<IDBDatabase> {
+ protected open():Promise<IDBDatabase> {
   if(!this.factory)return Promise.reject(new Error('Browser storage unavailable'));
   return this.database??=new Promise((resolve,reject)=>{
-   const request=this.factory!.open(this.name,1);
+   const request=this.factory!.open(this.name,2);
    request.onupgradeneeded=()=>{
-    request.result.createObjectStore('workouts',{keyPath:'id'});
+    if(!request.result.objectStoreNames.contains('workouts'))request.result.createObjectStore('workouts',{keyPath:'id'});
     // Account mutations are added by the authenticated sync adapter in stage 5.
-    request.result.createObjectStore('outbox',{keyPath:'mutationId'});
+    if(!request.result.objectStoreNames.contains('outbox'))request.result.createObjectStore('outbox',{keyPath:'mutationId'});
+    if(!request.result.objectStoreNames.contains('bindings'))request.result.createObjectStore('bindings',{keyPath:'workoutId'});
    };
    request.onsuccess=()=>{const db=request.result;db.onversionchange=()=>{db.close();this.database=null;};resolve(db);};
    request.onerror=()=>{this.database=null;reject(request.error??new Error('Browser storage failed'));};

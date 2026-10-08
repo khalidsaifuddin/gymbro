@@ -1,6 +1,6 @@
 # Implementation plan: Gymbro web MVP
 
-Status: tahap 1 dan prototipe kamera task 2.1–2.4 sudah diimplementasikan. Corpus/evaluasi kamera nyata task 2.5–2.6 belum tersedia. Change: `gymbro-web-mvp`. Lihat plan/validation tahap 1 dan 2 serta task OpenSpec untuk batas hasil aktual; UI log lengkap/persistence/backend workout menyusul.
+Status: domain, prototipe kamera, UI/persistence/video, tiga schema PostgreSQL, API/auth/sync dan integrasi web telah diimplementasikan. Lihat plan/validation tiap tahap dan tasks OpenSpec. Google login eksternal memerlukan konfigurasi; corpus/akurasi/perangkat nyata mengikuti live testing setelah runnable localhost. Deployment/native menyusul.
 
 ## Cara kerja setiap tahap
 
@@ -44,6 +44,6 @@ Exit gate: tes PostgreSQL dan API lulus; migrasi fresh install dan rollback diuj
 
 Jalankan tes E2E workout tamu, akun, offline/reconnect, konflik dua perangkat, penghapusan, dan rekaman. Jalankan type check/build frontend, tes Go termasuk race detector jika didukung, serta pengujian browser Chrome/Edge desktop dan Chrome Android.
 
-Command tahap 1 yang tersedia: `npm test`, `npm run typecheck`, `npm run build:web` dari `frontend`; `go test ./...` dan `go test -race ./...` dari `backend`. Lihat env build cloud pada `domain-api.md`. `npm run test:e2e` tersedia dan lulus untuk UI guest, kamera sintetis, IndexedDB, offline build, recorder dan SVG; lihat validation-stage-3.md. Migration test PostgreSQL disposable menjadi tahap berikutnya. Live testing perangkat/akurasi dilakukan setelah MVP runnable localhost, sesuai instruksi pengguna.
+Command tahap 1 yang tersedia: `npm test`, `npm run typecheck`, `npm run build:web` dari `frontend`; `go test ./...` dan `go test -race ./...` dari `backend`. Lihat env build cloud pada `domain-api.md`. `npm run test:e2e` tersedia dan lulus untuk UI guest, kamera sintetis, IndexedDB, offline build, recorder dan SVG; lihat validation-stage-3.md. Migration/repository/API/auth/concurrency tests PostgreSQL disposable tersedia; lihat validation-stage-5.md. Live testing perangkat/akurasi dilakukan setelah MVP runnable localhost, sesuai instruksi pengguna.
 
 Publikasi/deployment, Safari, dan aplikasi native iOS/Android adalah tahap lanjutan. Hasil akhir harus membedakan tes otomatis, uji perangkat, evaluasi akurasi, dan konfigurasi OAuth/deployment yang belum tersedia.

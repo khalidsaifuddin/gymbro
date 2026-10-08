@@ -229,3 +229,31 @@ func TestWorkoutAndActivityAreAtomic(t *testing.T) {
 		t.Fatalf("business state changed after activity failure: %+v %v", original, err)
 	}
 }
+
+func TestSyncSnapshotRetainsPauseIntervalsAndProfileLabels(t *testing.T) {
+	_, repo, a, _ := setup(t)
+	ctx := context.Background()
+	w := sample(a)
+	captured := *w.FinishedAt
+	start := w.StartedAt.Add(20 * time.Second)
+	end := w.StartedAt.Add(30 * time.Second)
+	w.CapturedAt = &captured
+	w.PauseIntervals = []entity.PauseInterval{{Start: start, End: &end}}
+	w.PausedDurationMS = 10000
+	w.DurationMS = 50000
+	w.Exercises[0].Sets[0].LabelSource = "profile"
+	w.Exercises[0].Sets[0].RecognitionStatus = "unknown"
+	if _, err := repo.Save(ctx, a, w, 0); err != nil {
+		t.Fatal(err)
+	}
+	read, err := repo.Find(ctx, a, w.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if read.CapturedAt == nil || !read.CapturedAt.Equal(captured) || len(read.PauseIntervals) != 1 || !read.PauseIntervals[0].Start.Equal(start) || read.PauseIntervals[0].End == nil || !read.PauseIntervals[0].End.Equal(end) {
+		t.Fatalf("pause/capture snapshot lost: %+v", read)
+	}
+	if read.Exercises[0].Sets[0].LabelSource != "profile" || read.Exercises[0].Sets[0].DetectedExerciseID != nil {
+		t.Fatal("profile was converted into classifier label")
+	}
+}

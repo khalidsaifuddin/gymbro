@@ -2,7 +2,9 @@
 
 Rancangan aplikasi workout berbasis kamera: Go clean architecture untuk backend, Expo/React Native Web untuk frontend pertama, lalu iOS/Android. Video diproses di perangkat; backend menyimpan hasil latihan.
 
-Status saat ini: prototipe kamera MediaPipe on-device, mode kamera/log, edit dan merge set, timer, summary, riwayat tamu IndexedDB, recovery, web build offline, rekaman lokal opsional, serta lima SVG original dan panduan pose tersedia. 112 unit tests dan 18 browser tests lulus. Migration/repository PostgreSQL tiga schema dan partisi log tersedia, dengan 15 tes Go/integration/race lulus. API workout, OAuth dan sync akun belum selesai. Live testing/akurasi dilakukan setelah MVP dapat dijalankan dari localhost; deployment dan native menyusul.
+Status: implementasi web runnable dengan deteksi MediaPipe lokal, mode kamera/log, koreksi/merge, summary, IndexedDB/recovery, cache offline, video opsional lokal, lima SVG, PostgreSQL tiga schema, API, dan durable sync akun. Login Google eksternal memerlukan konfigurasi OAuth; test akun memakai issuer fixture bertanda tangan dan PostgreSQL nyata. Live testing/akurasi dilakukan setelah MVP runnable localhost; deployment/native menyusul. Lihat laporan validasi tahap 5 untuk batas bukti.
+
+Panduan instalasi, startup, OAuth, tes, dan kelanjutan Codex CLI: [localhost-guide.md](docs/localhost-guide.md).
 
 ## Mulai dari dokumen
 
@@ -13,6 +15,7 @@ Status saat ini: prototipe kamera MediaPipe on-device, mode kamera/log, edit dan
 - [Kebutuhan produk](docs/product-requirements.md)
 - [Desain tiga schema PostgreSQL](docs/database-design.md)
 - [Plan database](docs/implementation-stage-4.md), [validasi PostgreSQL](docs/validation-stage-4.md), dan [command database](docs/database-operations.md)
+- [Plan API/auth/sync](docs/implementation-stage-5.md), [plan integrasi](docs/implementation-stage-6.md), dan [validasi](docs/validation-stage-5.md)
 - [Aturan kerja](AGENTS.md) dan [glossary](GLOSSARY.md)
 - [Proposal OpenSpec](openspec/changes/gymbro-web-mvp/proposal.md), [design](openspec/changes/gymbro-web-mvp/design.md), dan [tasks](openspec/changes/gymbro-web-mvp/tasks.md)
 - [Referensi backend](docs/backend-architecture-reference.md), [referensi UI](docs/workout-ui-reference.md), dan [riset animasi](docs/exercise-animation-research.md)
@@ -29,18 +32,19 @@ openspec status --change gymbro-web-mvp
 openspec validate gymbro-web-mvp --strict
 ```
 
-Skill Codex OpenSpec berada di `.agents/skills`. Frontend dapat dijalankan dari `frontend` dengan `EXPO_NO_TELEMETRY=1 npm run web`; aset model/WASM disiapkan otomatis dengan verifikasi checksum. Backend dari `backend` dengan compiler Go 1.27.1 dan `go run .`. Lihat command cache/build dalam `docs/domain-api.md` dan browser tests pada `docs/validation-stage-2.md`. Mulai setiap implementasi dengan plan dan tes perilaku RED; jangan menyamakan tes domain dengan akurasi deteksi kamera.
+Skill Codex OpenSpec berada di `.agents/skills`. Frontend dapat dijalankan dari `frontend` dengan `EXPO_NO_TELEMETRY=1 npm run web`; aset model/WASM disiapkan otomatis dengan verifikasi checksum. Backend memakai compiler Go 1.27.1; jalankan dari root dengan script localhost setelah PostgreSQL tersedia. Lihat command cache/build dalam `docs/domain-api.md` dan browser tests pada `docs/validation-stage-2.md`. Mulai setiap implementasi dengan plan dan tes perilaku RED; jangan menyamakan tes domain dengan akurasi deteksi kamera.
 
-## Menjalankan web build dari localhost
+## Menjalankan aplikasi dari localhost
 
-Dari `frontend`, gunakan Node 24 dan Python yang tersedia:
+Gunakan Node 24, Go 1.27.1, dan Docker Compose v2. Dari root repo:
 
 ```bash
-npm ci
-npm run build:web
-python -m http.server 8082 --bind 127.0.0.1 --directory dist
+npm --prefix frontend ci
+npm --prefix frontend run build:web
+docker compose up -d --wait db
+bash scripts/start-local.sh
 ```
 
-Buka localhost port 8082 pada browser mesin yang menjalankan server. Izinkan kamera, pilih profil latihan, atau catat set manual. Tunggu status "Aplikasi dan model siap offline" sebelum memutus koneksi. Hasil disimpan pada browser/origin yang sama; port berbeda memiliki riwayat berbeda. Development Expo memakai port 8081; gunakan port terpisah untuk build agar cache service worker tidak menutupi dev server. Kamera pada alamat remote membutuhkan HTTPS; akses localhost tidak membutuhkan deployment VPS.
+Buka localhost port 8080. Go menyajikan frontend dan API pada origin yang sama, dengan PostgreSQL pada loopback port 54329. Guest tidak memerlukan Google credential. `.env.example` menyediakan konfigurasi lokal; isi credential nyata hanya di `.env` yang diabaikan Git. Rincian dan command tes ada pada [panduan localhost](docs/localhost-guide.md).
 
-Ini runnable milestone lokal, belum seluruh MVP. Uji perangkat dan akurasi menunggu MVP lengkap. Video opt-in menghasilkan file per segmen pause/resume; simpan ke perangkat lalu buang salinan sementara. Reload hanya memulihkan hasil workout. SVG memiliki [lisensi aset CC-BY-4.0](frontend/public/exercises/LICENSE.txt) dengan atribusi Gymbro contributors.
+Tunggu "Aplikasi dan model siap offline" sebelum memutus jaringan. Hasil tamu disimpan pada browser/origin yang sama; port berbeda memiliki riwayat berbeda. Video opt-in menghasilkan file per segmen pause/resume; simpan ke perangkat lalu buang salinan sementara. Reload hanya memulihkan hasil workout. SVG memiliki [lisensi aset CC-BY-4.0](frontend/public/exercises/LICENSE.txt).

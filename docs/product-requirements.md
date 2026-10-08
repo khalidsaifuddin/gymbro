@@ -22,7 +22,7 @@
 - Workout dapat dilakukan tanpa login. Hasil pengguna tamu disimpan lokal; login Google memungkinkan penyimpanan riwayat lintas perangkat. Pengguna memilih apakah hasil tamu dipindahkan ke akun.
 - Setelah aplikasi dan model dimuat, workout dapat berjalan ketika koneksi terputus. Hasil disinkronkan saat koneksi kembali. Pemakaian pertama memerlukan internet.
 - Tampilan saat latihan memuat kamera, gerakan yang terdeteksi, nomor set, hitungan repetisi langsung, timer istirahat, peringatan posisi kamera, serta tombol pause dan selesai workout. Hitungan harus terbaca dari jarak penempatan kamera.
-- Referensi visual pemantauan workout: screenshot Hevy yang diberikan pengguna, dengan kartu per latihan, tabel set, hasil sebelumnya, input berat/repetisi, dan timer istirahat. Rincian adaptasi untuk Gymbro masih dibahas.
+- Referensi visual pemantauan workout: screenshot Hevy yang diberikan pengguna, dengan kartu per latihan, tabel set, hasil sebelumnya, input berat/repetisi, dan timer istirahat. Adaptasi Gymbro tersedia pada mode kamera/log dengan satu session aggregate.
 - Pengguna meminta pencarian animasi tiap gerakan yang open source; sumber dan lisensi aset harus diverifikasi sebelum digunakan.
 - Animasi demonstrasi untuk lima gerakan dibuat sebagai SVG original dengan source di repository dan lisensi aset CC-BY-4.0. Aset tersedia di frontend/public/exercises; hasil riset sumber pihak ketiga tercatat di docs/exercise-animation-research.md.
 - Timer target istirahat default 2 menit, dapat diubah per latihan. Pengguna dapat mulai set berikutnya sebelum timer habis. Durasi istirahat dimulai dari akhir repetisi terakhir, bukan setelah menunggu batas 15 detik untuk menutup set.
@@ -44,6 +44,6 @@
 
 ## Status dan validasi
 
-Kebutuhan MVP sudah disepakati. Domain, prototipe kamera, UI log, persistence tamu/recovery/offline, rekaman lokal dan SVG tersedia. Migration/repository PostgreSQL tiga schema serta partisi log diuji pada database nyata. API/OAuth/sync akun belum selesai. Live testing dan evaluasi akurasi dijadwalkan setelah MVP dapat dijalankan serta diakses dari localhost, sesuai instruksi pengguna. Definisi fase gerakan dan ambang deteksi merupakan parameter prototipe yang harus diuji, bukan janji akurasi.
+Kebutuhan MVP sudah disepakati. Domain, prototipe kamera, UI log, persistence tamu/recovery/offline, rekaman lokal dan SVG tersedia. Migration/repository PostgreSQL tiga schema serta partisi log diuji pada database nyata. API/auth/durable sync tersedia dan diuji melalui issuer OIDC fixture bertanda tangan, PostgreSQL nyata serta browser. Login Google eksternal menunggu konfigurasi OAuth sah. Live testing dan evaluasi akurasi dijadwalkan setelah MVP dapat dijalankan serta diakses dari localhost, sesuai instruksi pengguna. Definisi fase gerakan dan ambang deteksi merupakan parameter prototipe yang harus diuji, bukan janji akurasi.
 
 Lihat `implementation-plan.md`, `database-design.md`, dan change OpenSpec `gymbro-web-mvp` untuk rencana serta skenario penerimaan. Kredensial Google, deployment HTTPS, kebijakan retention log produksi, dan data evaluasi berizin akan disiapkan ketika tahap terkait dimulai; pekerjaan domain dan prototipe dapat berjalan lebih dahulu.

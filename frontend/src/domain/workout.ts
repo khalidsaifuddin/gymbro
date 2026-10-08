@@ -6,6 +6,7 @@ export type Observation = {
   phase: Phase;
   visible: boolean;
   bilateral?: boolean;
+  labelSource?:'automatic'|'profile';
 };
 export type WorkoutSet = {
   id: string;
@@ -21,6 +22,8 @@ export type WorkoutSet = {
   sourceIds: string[];
   mergedFrom?: WorkoutSet[];
   loadEdited?: boolean;
+  labelSource?:'automatic'|'profile'|'manual'|'mixed';
+  rawExercise?:ExerciseId|null;
 };
 export type SessionOptions = { clock: () => number; idFactory: () => string };
 export type SessionSnapshot = {
@@ -74,7 +77,7 @@ export class WorkoutSession {
     this.endSet();
     this.sets.push({id,exercise,reps,detectedReps:0,origin:'manual',startedAt:now,endedAt:now,lastRepAt:now,
       loadKg:loadKg===null?null:Math.round(loadKg*1000)/1000,implementCount:exercise==='dumbbell-curl'?2:1,
-      sourceIds:[id],loadEdited:true});
+      sourceIds:[id],loadEdited:true,labelSource:'manual',rawExercise:null});
     return id;
   }
 
@@ -105,9 +108,10 @@ export class WorkoutSession {
         if (!this.current) {
           const id = this.options.idFactory();
           this.current = { id, exercise, detectedReps: 0, origin: 'automatic', reps: 0, startedAt: this.anchor.at,
-            endedAt: null, lastRepAt: now, loadKg: null, implementCount: exercise === 'dumbbell-curl' ? 2 : 1, sourceIds: [id] };
+            endedAt: null, lastRepAt: now, loadKg: null, implementCount: exercise === 'dumbbell-curl' ? 2 : 1, sourceIds: [id],labelSource:observation.labelSource??'automatic',rawExercise:observation.labelSource==='profile'?null:exercise };
           this.sets.push(this.current);
         }
+        if(this.current.labelSource!==(observation.labelSource??'automatic')){this.current.labelSource='mixed';this.current.rawExercise=null;}
         this.current.detectedReps++;
         this.current.reps++;
         this.current.lastRepAt = now;
@@ -195,6 +199,7 @@ export class WorkoutSession {
     if (selected.some(set => set.endedAt === null)) throw new Error('Merge requires completed sets');
     if (selected.some(set => set.exercise !== selected[0].exercise)) throw new Error('Merge requires the same exercise');
     const sameLoad = selected.every(set => set.loadKg === selected[0].loadKg && set.implementCount === selected[0].implementCount);
+    const labelSource=selected.every(set=>set.labelSource===selected[0].labelSource)?selected[0].labelSource??'mixed':'mixed';
     const merged: WorkoutSet = { ...selected[0],
       origin: selected.every(set => set.origin === selected[0].origin) ? selected[0].origin : 'mixed',
       reps: selected.reduce((n, set) => n + set.reps, 0),
@@ -205,6 +210,7 @@ export class WorkoutSession {
       sourceIds: selected.flatMap(set => set.sourceIds),
       mergedFrom: structuredClone(selected),
       loadEdited: false,
+      labelSource,rawExercise:labelSource==='automatic'?selected[0].rawExercise??null:null,
     };
     const position = this.sets.indexOf(selected[0]);
     this.sets = this.sets.filter(set => !ids.includes(set.id));

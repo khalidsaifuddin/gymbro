@@ -1,7 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
-  testDir:'./e2e',testMatch:'*.spec.ts',timeout:60000,workers:1,expect:{timeout:5000},
+  testDir:'./e2e',testMatch:'*.spec.ts',testIgnore:'account-sync.spec.ts',timeout:60000,workers:1,expect:{timeout:5000},
   use:{browserName:'chromium',headless:true,
     launchOptions:{args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']}},
   webServer:[

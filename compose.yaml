@@ -1,0 +1,35 @@
+name: gymbro
+services:
+  db:
+    image: postgres:17.11-bookworm
+    environment:
+      POSTGRES_USER: gymbro_local
+      POSTGRES_DB: gymbro_local
+      POSTGRES_PASSWORD: ${GYMBRO_DB_PASSWORD:-gymbro-local-development-only}
+    ports:
+      - '127.0.0.1:54329:5432'
+    volumes:
+      - local-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U gymbro_local -d gymbro_local']
+      interval: 2s
+      timeout: 3s
+      retries: 20
+  db-test:
+    profiles: ['test']
+    image: postgres:17.11-bookworm
+    environment:
+      POSTGRES_USER: gymbro_test
+      POSTGRES_DB: gymbro_test
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - '127.0.0.1:55432:5432'
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U gymbro_test -d gymbro_test']
+      interval: 2s
+      timeout: 3s
+      retries: 20
+volumes:
+  local-postgres:
