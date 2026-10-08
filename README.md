@@ -2,7 +2,7 @@
 
 Rancangan aplikasi workout berbasis kamera: Go clean architecture untuk backend, Expo/React Native Web untuk frontend pertama, lalu iOS/Android. Video diproses di perangkat; backend menyimpan hasil latihan.
 
-Status saat ini: prototipe kamera MediaPipe on-device, mode kamera/log, edit dan merge set, timer, summary, riwayat tamu IndexedDB, recovery, web build offline, rekaman lokal opsional, serta lima SVG original dan panduan pose tersedia. 112 unit tests dan 18 browser tests lulus. Server Go/Gin masih fondasi; database, API workout, OAuth dan sync akun belum selesai. Live testing/akurasi dilakukan setelah MVP dapat dijalankan dari localhost; deployment dan native menyusul.
+Status saat ini: prototipe kamera MediaPipe on-device, mode kamera/log, edit dan merge set, timer, summary, riwayat tamu IndexedDB, recovery, web build offline, rekaman lokal opsional, serta lima SVG original dan panduan pose tersedia. 112 unit tests dan 18 browser tests lulus. Migration/repository PostgreSQL tiga schema dan partisi log tersedia, dengan 15 tes Go/integration/race lulus. API workout, OAuth dan sync akun belum selesai. Live testing/akurasi dilakukan setelah MVP dapat dijalankan dari localhost; deployment dan native menyusul.
 
 ## Mulai dari dokumen
 
@@ -12,6 +12,7 @@ Status saat ini: prototipe kamera MediaPipe on-device, mode kamera/log, edit dan
 - [Plan UI/persistence/rekaman](docs/implementation-stage-3.md), [validasi tahap 3](docs/validation-stage-3.md), dan [source SVG](frontend/scripts/generate-exercise-guides.mjs)
 - [Kebutuhan produk](docs/product-requirements.md)
 - [Desain tiga schema PostgreSQL](docs/database-design.md)
+- [Plan database](docs/implementation-stage-4.md), [validasi PostgreSQL](docs/validation-stage-4.md), dan [command database](docs/database-operations.md)
 - [Aturan kerja](AGENTS.md) dan [glossary](GLOSSARY.md)
 - [Proposal OpenSpec](openspec/changes/gymbro-web-mvp/proposal.md), [design](openspec/changes/gymbro-web-mvp/design.md), dan [tasks](openspec/changes/gymbro-web-mvp/tasks.md)
 - [Referensi backend](docs/backend-architecture-reference.md), [referensi UI](docs/workout-ui-reference.md), dan [riset animasi](docs/exercise-animation-research.md)

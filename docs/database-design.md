@@ -1,6 +1,6 @@
 # Desain PostgreSQL Gymbro
 
-Status: rancangan untuk migration TDD; database belum dibuat.
+Status: migration/repository tiga schema tersedia dan diuji pada PostgreSQL nyata. Lihat `validation-stage-4.md` dan `database-operations.md`. API/auth/sync akun mengikuti tahap 5.
 
 ## Pembagian schema
 
@@ -14,6 +14,7 @@ Status: rancangan untuk migration TDD; database belum dibuat.
 | `public.workout_sets` | UUID, workout-exercise FK, position, detected/final reps, rep source, detected exercise, recognition status, load kg, implement count, waktu set/rest |
 | `public.auth_sessions` | UUID, user FK, unique token hash, expiry, timestamps |
 | `public.sync_mutations` | Composite key user/mutation UUID, request hash, target workout UUID, resulting revision, outcome, processed time |
+| `public.schema_migrations` | Ledger operasional versi/checksum migration, bukan activity log |
 | `log.workout_events` | Lifecycle sesi/set dan koreksi |
 | `log.auth_events` | Aktivitas login/logout tanpa credential/token |
 | `log.sync_events` | Attempt, conflict, dan outcome sinkronisasi |

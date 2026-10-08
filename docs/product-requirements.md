@@ -44,6 +44,6 @@
 
 ## Status dan validasi
 
-Kebutuhan MVP sudah disepakati. Domain, prototipe kamera, UI log, persistence tamu/recovery/offline, rekaman lokal dan SVG tersedia. Database/API/OAuth/sync akun belum selesai. Live testing dan evaluasi akurasi dijadwalkan setelah MVP dapat dijalankan serta diakses dari localhost, sesuai instruksi pengguna. Definisi fase gerakan dan ambang deteksi merupakan parameter prototipe yang harus diuji, bukan janji akurasi.
+Kebutuhan MVP sudah disepakati. Domain, prototipe kamera, UI log, persistence tamu/recovery/offline, rekaman lokal dan SVG tersedia. Migration/repository PostgreSQL tiga schema serta partisi log diuji pada database nyata. API/OAuth/sync akun belum selesai. Live testing dan evaluasi akurasi dijadwalkan setelah MVP dapat dijalankan serta diakses dari localhost, sesuai instruksi pengguna. Definisi fase gerakan dan ambang deteksi merupakan parameter prototipe yang harus diuji, bukan janji akurasi.
 
 Lihat `implementation-plan.md`, `database-design.md`, dan change OpenSpec `gymbro-web-mvp` untuk rencana serta skenario penerimaan. Kredensial Google, deployment HTTPS, kebijakan retention log produksi, dan data evaluasi berizin akan disiapkan ketika tahap terkait dimulai; pekerjaan domain dan prototipe dapat berjalan lebih dahulu.

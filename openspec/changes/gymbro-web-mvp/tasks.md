@@ -35,12 +35,12 @@ Checkbox mencatat pekerjaan yang telah selesai atau masih terbuka. Ikuti `AGENTS
 
 ## 4. Database tiga schema dan activity logs
 
-- [ ] 4.1 Tulis plan migration/repository dengan daftar tabel qualified dan partition lifecycle; verifikasi mapping sesuai `docs/database-design.md` dan siapkan PostgreSQL disposable.
-- [ ] 4.2 RED: integration tests fresh install, constraints/FKs, owner scoping, aggregate transaction, dan NUMERIC load; verifikasi failures sebelum migration/repository.
-- [ ] 4.3 GREEN/REFACTOR: versioned migrations `ref`/`public` serta repository GORM qualified; verifikasi suite 4.2 lulus dan domain/use case tidak mengimpor adapter.
-- [ ] 4.4 RED: integration tests log insertion, UTC month boundary, delayed offline event, absent-partition fallback, dan expiry isolation; verifikasi failure pada skenario partition.
-- [ ] 4.5 GREEN/REFACTOR: migration log parents/monthly partitions/fallback dan maintenance command; verifikasi 4.4 lulus, fallback overlap dapat dipindahkan, serta drop partisi tidak menghapus state public/ref.
-- [ ] 4.6 Dokumentasikan fresh migration, seed repeatability, maintenance, dan rollback pada DB disposable; verifikasi command yang ditulis berhasil tanpa merusak data pengguna.
+- [x] 4.1 Tulis plan migration/repository dengan daftar tabel qualified dan partition lifecycle; verifikasi mapping sesuai `docs/database-design.md` dan siapkan PostgreSQL disposable.
+- [x] 4.2 RED: integration tests fresh install, constraints/FKs, owner scoping, aggregate transaction, dan NUMERIC load; verifikasi failures sebelum migration/repository.
+- [x] 4.3 GREEN/REFACTOR: versioned migrations `ref`/`public` serta repository GORM qualified; verifikasi suite 4.2 lulus dan domain/use case tidak mengimpor adapter.
+- [x] 4.4 RED: integration tests log insertion, UTC month boundary, delayed offline event, absent-partition fallback, dan expiry isolation; verifikasi failure pada skenario partition.
+- [x] 4.5 GREEN/REFACTOR: migration log parents/monthly partitions/fallback dan maintenance command; verifikasi 4.4 lulus, fallback overlap dapat dipindahkan, serta drop partisi tidak menghapus state public/ref.
+- [x] 4.6 Dokumentasikan fresh migration, seed repeatability, maintenance, dan rollback pada DB disposable; verifikasi command yang ditulis berhasil tanpa merusak data pengguna.
 
 ## 5. API, Google login, riwayat dan sinkronisasi
 
