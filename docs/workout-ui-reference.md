@@ -22,4 +22,4 @@ Tabel memiliki kolom nomor set, hasil sebelumnya, berat, repetisi, dan status se
 - Animasi SVG original untuk lima gerakan memakai CC-BY-4.0 beserta source/atribusi; screenshot Hevy menjadi referensi pola interaksi.
 - Volume mengikuti konvensi beban yang disepakati dalam `product-requirements.md`; beban kosong tidak diperlakukan sebagai nol yang diketahui.
 
-Pengguna menyerahkan pilihan frontend kepada rekomendasi asisten. Layout ini merupakan rancangan implementasi; belum ada UI yang dibuat atau diuji.
+Pengguna menyerahkan pilihan frontend kepada rekomendasi asisten. UI kamera/log sekarang diimplementasikan pada satu aggregate `WorkoutSession`, dengan tabel set, previous result riwayat tamu lokal, edit/merge, timer dan summary. Lihat `validation-stage-3.md`; login dan previous result akun lintas perangkat mengikuti tahap 5.

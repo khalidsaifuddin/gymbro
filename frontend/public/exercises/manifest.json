@@ -1,0 +1,34 @@
+{
+  "creator": "Gymbro contributors",
+  "license": "CC-BY-4.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+  "attribution": "Gymbro contributors — Gymbro exercise guides — CC-BY-4.0",
+  "source": "frontend/scripts/generate-exercise-guides.mjs",
+  "exercises": [
+    {
+      "id": "squat",
+      "animation": "squat.svg",
+      "poses": "squat-poses.svg"
+    },
+    {
+      "id": "push-up",
+      "animation": "push-up.svg",
+      "poses": "push-up-poses.svg"
+    },
+    {
+      "id": "dumbbell-curl",
+      "animation": "dumbbell-curl.svg",
+      "poses": "dumbbell-curl-poses.svg"
+    },
+    {
+      "id": "machine-shoulder-press",
+      "animation": "machine-shoulder-press.svg",
+      "poses": "machine-shoulder-press-poses.svg"
+    },
+    {
+      "id": "bench-press",
+      "animation": "bench-press.svg",
+      "poses": "bench-press-poses.svg"
+    }
+  ]
+}

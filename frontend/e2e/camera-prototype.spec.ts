@@ -75,6 +75,7 @@ test('pergantian profil pada set aktif menunggu konfirmasi',async ({page})=>{
   await page.getByLabel('Profil kamera').selectOption('squat');
   await page.getByRole('button',{name:'Aktifkan kamera',exact:true}).click();
   await expect(page.getByText('Total reps: 1',{exact:true})).toBeVisible();
+  await expect(page.getByTestId('live-rep-counter')).toHaveText('1');
   await page.getByLabel('Profil kamera').selectOption('bench-press');
   await expect(page.getByText('Konfirmasi pergantian latihan; set aktif akan diakhiri.')).toBeVisible();
   await expect(page.getByLabel('Profil kamera')).toHaveValue('squat');

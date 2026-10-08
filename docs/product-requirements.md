@@ -24,7 +24,7 @@
 - Tampilan saat latihan memuat kamera, gerakan yang terdeteksi, nomor set, hitungan repetisi langsung, timer istirahat, peringatan posisi kamera, serta tombol pause dan selesai workout. Hitungan harus terbaca dari jarak penempatan kamera.
 - Referensi visual pemantauan workout: screenshot Hevy yang diberikan pengguna, dengan kartu per latihan, tabel set, hasil sebelumnya, input berat/repetisi, dan timer istirahat. Rincian adaptasi untuk Gymbro masih dibahas.
 - Pengguna meminta pencarian animasi tiap gerakan yang open source; sumber dan lisensi aset harus diverifikasi sebelum digunakan.
-- Animasi demonstrasi untuk lima gerakan dibuat sebagai SVG original dengan source di repository dan lisensi aset CC-BY-4.0. Aset belum dibuat; hasil riset sumber pihak ketiga tercatat di docs/exercise-animation-research.md.
+- Animasi demonstrasi untuk lima gerakan dibuat sebagai SVG original dengan source di repository dan lisensi aset CC-BY-4.0. Aset tersedia di frontend/public/exercises; hasil riset sumber pihak ketiga tercatat di docs/exercise-animation-research.md.
 - Timer target istirahat default 2 menit, dapat diubah per latihan. Pengguna dapat mulai set berikutnya sebelum timer habis. Durasi istirahat dimulai dari akhir repetisi terakhir, bukan setelah menunggu batas 15 detik untuk menutup set.
 - Satuan beban MVP adalah kg. Beban barbell mencakup berat batang; beban dumbbell dicatat per dumbbell; beban mesin mengikuti angka yang dipilih. Label input menjelaskan konvensi tersebut.
 - Volume latihan dihitung sebagai repetisi dikali total beban eksternal yang digunakan pada repetisi tersebut. Dua dumbbell masing-masing 10 kg yang bergerak bersama selama 10 repetisi menghasilkan volume 200 kg. Bodyweight dicatat sebagai set/repetisi tanpa perkiraan berat tubuh atau volume beban tubuh.
@@ -44,6 +44,6 @@
 
 ## Status dan validasi
 
-Kebutuhan MVP sudah disepakati. Implementasi aplikasi, migrasi database, animasi, dan evaluasi akurasi belum tersedia. Definisi fase gerakan dan ambang deteksi merupakan parameter prototipe yang harus diuji, bukan janji akurasi.
+Kebutuhan MVP sudah disepakati. Domain, prototipe kamera, UI log, persistence tamu/recovery/offline, rekaman lokal dan SVG tersedia. Database/API/OAuth/sync akun belum selesai. Live testing dan evaluasi akurasi dijadwalkan setelah MVP dapat dijalankan serta diakses dari localhost, sesuai instruksi pengguna. Definisi fase gerakan dan ambang deteksi merupakan parameter prototipe yang harus diuji, bukan janji akurasi.
 
 Lihat `implementation-plan.md`, `database-design.md`, dan change OpenSpec `gymbro-web-mvp` untuk rencana serta skenario penerimaan. Kredensial Google, deployment HTTPS, kebijakan retention log produksi, dan data evaluasi berizin akan disiapkan ketika tahap terkait dimulai; pekerjaan domain dan prototipe dapat berjalan lebih dahulu.

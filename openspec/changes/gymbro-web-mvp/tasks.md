@@ -25,12 +25,12 @@ Checkbox mencatat pekerjaan yang telah selesai atau masih terbuka. Ikuti `AGENTS
 
 ## 3. UI, persistence lokal, dan rekaman
 
-- [ ] 3.1 Tulis plan UI/outbox/recording dengan skenario tiap adapter; verifikasi komponen kamera dan log berbagi satu session aggregate.
-- [ ] 3.2 RED: interaction tests penghitung besar, kartu/tabel set, prior result, input beban, timer, koreksi, serta summary; verifikasi failures sesuai kebutuhan.
-- [ ] 3.3 GREEN/REFACTOR: implementasikan mode kamera dan log ala referensi Hevy; verifikasi tests 3.2 lulus dengan label beban jelas dan summary konsisten.
-- [ ] 3.4 RED → GREEN → REFACTOR: IndexedDB incremental save, reload recovery, permission denial, pause/background, cache/model readiness, dan network interruption; verifikasi data tidak hilang setelah reload dan offline continuation.
-- [ ] 3.5 RED → GREEN → REFACTOR: recorder default off, opt-in sebelum sesi, pause, unsupported MIME, save/discard lokal; verifikasi workout tetap tersimpan saat video dibuang dan tidak ada video upload.
-- [ ] 3.6 Buat lima SVG original beserta source, metadata atribusi, dan CC-BY-4.0 asset license; verifikasi tiap gerakan memiliki animasi yang cocok, lisensi dapat ditemukan, dan rendering bekerja di target web.
+- [x] 3.1 Tulis plan UI/outbox/recording dengan skenario tiap adapter; verifikasi komponen kamera dan log berbagi satu session aggregate.
+- [x] 3.2 RED: interaction tests penghitung besar, kartu/tabel set, prior result, input beban, timer, koreksi, serta summary; verifikasi failures sesuai kebutuhan.
+- [x] 3.3 GREEN/REFACTOR: implementasikan mode kamera dan log ala referensi Hevy; verifikasi tests 3.2 lulus dengan label beban jelas dan summary konsisten.
+- [x] 3.4 RED → GREEN → REFACTOR: IndexedDB incremental save, reload recovery, permission denial, pause/background, cache/model readiness, dan network interruption; verifikasi data tidak hilang setelah reload dan offline continuation.
+- [x] 3.5 RED → GREEN → REFACTOR: recorder default off, opt-in sebelum sesi, pause, unsupported MIME, save/discard lokal; verifikasi workout tetap tersimpan saat video dibuang dan tidak ada video upload.
+- [x] 3.6 Buat lima SVG original beserta source, metadata atribusi, dan CC-BY-4.0 asset license; verifikasi tiap gerakan memiliki animasi yang cocok, lisensi dapat ditemukan, dan rendering bekerja di target web.
 - [ ] 3.7 Dokumentasikan dan jalankan smoke test guest workout serta recording pada perangkat nyata; deliver hasil browser/perangkat, permission flow, dan keterbatasan video reload yang benar.
 
 ## 4. Database tiga schema dan activity logs

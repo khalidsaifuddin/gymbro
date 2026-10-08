@@ -1,3 +1,4 @@
+import {validateSnapshot} from './workout-snapshot';
 export type ExerciseId = 'squat' | 'push-up' | 'dumbbell-curl' | 'machine-shoulder-press' | 'bench-press';
 export type Phase = 'ready' | 'peak' | 'moving';
 export type Observation = {
@@ -22,6 +23,10 @@ export type WorkoutSet = {
   loadEdited?: boolean;
 };
 export type SessionOptions = { clock: () => number; idFactory: () => string };
+export type SessionSnapshot = {
+  version:1; startedAt:number; finishedAt:number|null; savedAt:number;
+  currentSetId:string|null; sets:WorkoutSet[]; pauses:{start:number;end:number|null}[];
+};
 export type WorkoutSummary = {
   totalSets: number; totalReps: number; knownVolumeKg: number; volumeComplete: boolean;
   durationMs: number; pausedDurationMs: number; restDurationMs: number;
@@ -42,6 +47,24 @@ export class WorkoutSession {
   private pauses: { start: number; end: number | null }[] = [];
 
   constructor(options: SessionOptions) { this.options = options; this.startedAt = options.clock(); }
+
+  exportSnapshot(): SessionSnapshot {
+    return structuredClone({version:1,startedAt:this.startedAt,finishedAt:this.finishedAt,
+      savedAt:this.options.clock(),currentSetId:this.current?.id??null,sets:this.sets,pauses:this.pauses});
+  }
+  static restore(value:unknown,options:SessionOptions): WorkoutSession {
+    const snapshot=validateSnapshot(value),session=new WorkoutSession(options);
+    session.startedAt=snapshot.startedAt;session.finishedAt=snapshot.finishedAt;
+    session.sets=snapshot.sets;session.pauses=snapshot.pauses;
+    session.current=session.sets.find(set=>set.id===snapshot.currentSetId)??null;
+    if(session.finishedAt===null) {
+      if(session.pauses.at(-1)?.end!==null) session.pauses.push({start:snapshot.savedAt,end:null});
+      session.paused=true;
+    }
+    return session;
+  }
+  isPaused():boolean {return this.paused;}
+  isFinished():boolean {return this.finishedAt!==null;}
 
   addManualSet(exercise: ExerciseId, reps: number, loadKg: number | null = null): string {
     if (this.finishedAt !== null) throw new Error('Workout is finished');
@@ -160,7 +183,7 @@ export class WorkoutSession {
   confirmExerciseChange(): void { if (this.pendingExercise) this.endSet(); }
 
   correctSet(id: string, reps: number): void {
-    if (!Number.isSafeInteger(reps) || reps < 0) throw new Error('Reps must be a nonnegative integer');
+    if (!Number.isSafeInteger(reps) || reps < 0 || reps > 2147483647) throw new Error('Reps must be a nonnegative integer within the storage range');
     const set = this.requireSet(id);
     if (set.endedAt === null) throw new Error('Corrections require a completed set');
     set.reps = reps;

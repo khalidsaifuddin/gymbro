@@ -18,7 +18,8 @@
     "prebuild:web": "npm run prepare:vision",
     "preweb": "npm run prepare:vision",
     "test:camera": "playwright test camera-prototype.spec.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "postbuild:web": "node scripts/prepare-offline.mjs"
   },
   "dependencies": {
     "@expo/metro-runtime": "57.0.16",
@@ -34,6 +35,7 @@
     "@types/node": "26.6.4",
     "@types/react": "19.3.0",
     "esbuild": "0.28.2",
+    "fake-indexeddb": "6.2.5",
     "typescript": "7.0.2",
     "vitest": "5.0.3"
   }

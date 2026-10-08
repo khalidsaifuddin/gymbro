@@ -38,4 +38,4 @@ API katalog langsung mengembalikan proxy HTTP 403 dalam lingkungan ini; cakupan 
 2. Verifikasi video Wger satu per satu bila katalog dapat diakses.
 3. Gunakan ilustrasi statis sebagai fallback dengan batas bukti lisensi di atas.
 
-Pengguna menyetujui opsi 1: animasi SVG original dengan source di repository dan lisensi aset CC-BY-4.0. Animasi tersebut belum dibuat. Belum ada media pihak ketiga yang diimpor ke aplikasi. Animasi demonstrasi bukan model pengenalan gerakan dan bukan bukti akurasi deteksi.
+Pengguna menyetujui opsi 1. Lima SVG original dan lima diagram pose awal/akhir kini tersedia di `frontend/public/exercises`, source yang dapat diedit `frontend/scripts/generate-exercise-guides.mjs`, metadata manifest dan lisensi aset CC-BY-4.0 dengan atribusi Gymbro contributors. Animasi menggunakan interpolasi posisi anggota tubuh; reduced motion menampilkan diagram statis. Belum ada media pihak ketiga yang diimpor. Animasi demonstrasi bukan model pengenalan gerakan dan bukan bukti akurasi deteksi.

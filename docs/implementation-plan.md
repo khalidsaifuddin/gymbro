@@ -44,6 +44,6 @@ Exit gate: tes PostgreSQL dan API lulus; migrasi fresh install dan rollback diuj
 
 Jalankan tes E2E workout tamu, akun, offline/reconnect, konflik dua perangkat, penghapusan, dan rekaman. Jalankan type check/build frontend, tes Go termasuk race detector jika didukung, serta pengujian browser Chrome/Edge desktop dan Chrome Android.
 
-Command tahap 1 yang tersedia: `npm test`, `npm run typecheck`, `npm run build:web` dari `frontend`; `go test ./...` dan `go test -race ./...` dari `backend`. Lihat env build cloud pada `domain-api.md`. `npm run test:e2e` dan migration test PostgreSQL disposable masih merupakan target tahap lanjut, belum tersedia/terverifikasi.
+Command tahap 1 yang tersedia: `npm test`, `npm run typecheck`, `npm run build:web` dari `frontend`; `go test ./...` dan `go test -race ./...` dari `backend`. Lihat env build cloud pada `domain-api.md`. `npm run test:e2e` tersedia dan lulus untuk UI guest, kamera sintetis, IndexedDB, offline build, recorder dan SVG; lihat validation-stage-3.md. Migration test PostgreSQL disposable menjadi tahap berikutnya. Live testing perangkat/akurasi dilakukan setelah MVP runnable localhost, sesuai instruksi pengguna.
 
 Publikasi/deployment, Safari, dan aplikasi native iOS/Android adalah tahap lanjutan. Hasil akhir harus membedakan tes otomatis, uji perangkat, evaluasi akurasi, dan konfigurasi OAuth/deployment yang belum tersedia.

@@ -1,0 +1,17 @@
+Gymbro exercise guides — CC-BY-4.0
+Copyright 2026 Gymbro contributors.
+
+All SVG illustrations in this directory, their manifest and the artwork source
+frontend/scripts/generate-exercise-guides.mjs are licensed under the Creative
+Commons Attribution 4.0 International license (CC BY 4.0).
+
+You may share and adapt these assets for any purpose, including commercial use.
+You must give appropriate credit, link to the license, and indicate changes.
+Suggested attribution: "Gymbro contributors — Gymbro exercise guides — CC-BY-4.0".
+
+License terms: https://creativecommons.org/licenses/by/4.0/
+Legal code: https://creativecommons.org/licenses/by/4.0/legalcode
+
+This asset license does not license unrelated application code. The illustrations
+are simplified guides and do not establish technique assessment or recognition
+accuracy. No third-party photographs, videos or animation media are embedded.
