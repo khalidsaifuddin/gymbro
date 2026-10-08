@@ -1,4 +1,5 @@
 import type { ExerciseId, Observation, Phase } from '../domain/workout';
+import {allowsSingleSide,isCameraView,type CameraView} from '../domain/camera-view';
 
 export type Landmark = { x: number; y: number; visibility?: number; presence?: number };
 export type PoseFrame = {
@@ -10,6 +11,7 @@ export type PoseFrame = {
 export type PoseResult = { observation: Observation; reason: string | null };
 export type PoseOptions = {
   exercise: ExerciseId;
+  cameraView?: CameraView;
   smoothingAlpha?: number;
   stableFrames?: number;
   stableMs?: number;
@@ -23,11 +25,12 @@ export class PosePhaseAdapter {
   private candidate: Phase = 'moving';
   private candidateAt = 0;
   private frames = 0;
+  private selectedSide: 0|1|null = null;
 
   constructor(options: PoseOptions) {
-    this.options = {smoothingAlpha: .5, stableFrames: 3, stableMs: 120, ...options};
+    this.options = {smoothingAlpha: .5, stableFrames: 3, stableMs: 120, cameraView:'auto', ...options};
     const {smoothingAlpha, stableFrames, stableMs} = this.options;
-    if (!Number.isFinite(smoothingAlpha) || smoothingAlpha <= 0 || smoothingAlpha > 1 ||
+    if (!isCameraView(this.options.cameraView) || !Number.isFinite(smoothingAlpha) || smoothingAlpha <= 0 || smoothingAlpha > 1 ||
         !Number.isSafeInteger(stableFrames) || stableFrames < 1 || !Number.isFinite(stableMs) || stableMs < 0) {
       throw new Error('Invalid pose smoothing/debounce configuration');
     }
@@ -45,36 +48,51 @@ export class PosePhaseAdapter {
     if (!Number.isFinite(aspectRatio) || aspectRatio <= 0) return this.invalid('invalid-aspect-ratio');
     const {exercise} = this.options;
     const isSquat = exercise === 'squat';
-    const required = isSquat ? [11,12,23,24,25,26,27,28]
-      : exercise === 'machine-shoulder-press' ? [11,12,13,14,15,16,23,24,25,26,27,28]
-      : [11,12,13,14,15,16,23,24];
+    const required = isSquat ? [11,23,25,27]
+      : exercise === 'machine-shoulder-press' ? [11,13,15,23,25,27]
+      : [11,13,15,23];
     const raw = frame.landmarks;
-    if (raw.length !== 33 || required.some(index => !valid(raw[index]))) {
+    const eligible=([0,1] as const).filter(side=>required.every(index=>valid(raw[index+side])));
+    const single=allowsSingleSide(this.options.cameraView)&&exercise!=='dumbbell-curl';
+    if (raw.length !== 33 || (single ? eligible.length===0 : eligible.length!==2)) {
       return this.invalid('landmarks-unavailable');
+    }
+    let sides:readonly (0|1)[]=[0,1];
+    if(single){
+      if(this.selectedSide!==null&&!eligible.includes(this.selectedSide)){
+        this.selectedSide=eligible[0];
+        // Do not combine the previous limb's partial cycle with another limb.
+        return this.invalid('visible-side-changed');
+      }
+      if(this.selectedSide===null){
+        const confidence=(side:0|1)=>Math.min(...required.map(index=>Math.min(raw[index+side].visibility!,raw[index+side].presence??1)));
+        this.selectedSide=eligible.reduce((best,side)=>confidence(side)>confidence(best)?side:best);
+      }
+      sides=[this.selectedSide];
     }
     const points = raw.map(point => ({...point, x: point.x*aspectRatio}));
     const horizontal = exercise === 'push-up' || exercise === 'bench-press';
-    if ([0,1].some(side => {
+    if (sides.some(side => {
       const shoulder = points[11+side], hip = points[23+side];
       const dx = Math.abs(hip.x-shoulder.x), dy = Math.abs(hip.y-shoulder.y);
       return Math.hypot(dx,dy) < .04 || (horizontal ? dy > dx*.6 : dx > dy*.6);
     })) return this.invalid('camera-position');
-    if (horizontal && [0,1].some(side => {
+    if (horizontal && sides.some(side => {
       const torsoY=(points[11+side].y+points[23+side].y)/2;
       return exercise === 'bench-press' ? points[15+side].y >= torsoY-.01 : points[15+side].y <= torsoY+.01;
     })) return this.invalid('camera-position');
-    if (exercise === 'machine-shoulder-press' && [0,1].some(side => {
+    if (exercise === 'machine-shoulder-press' && sides.some(side => {
       const hip = points[23+side], knee = points[25+side];
       return Math.abs(knee.y-hip.y) > Math.abs(knee.x-hip.x)*.6;
     })) return this.invalid('camera-position');
-    if (exercise === 'dumbbell-curl' && [0,1].some(side => points[13+side].y <= points[11+side].y)) {
+    if (exercise === 'dumbbell-curl' && sides.some(side => points[13+side].y <= points[11+side].y)) {
       return this.invalid('camera-position');
     }
-    const angles = [0,1].map(side => isSquat
+    const angles = sides.map(side => isSquat
       ? angle(points[23+side],points[25+side],points[27+side])
       : angle(points[11+side],points[13+side],points[15+side]));
     if (angles.some(value => value === null)) return this.invalid('landmarks-unavailable');
-    const values = angles as [number,number];
+    const values: [number,number] = [angles[0]!,angles[1]??angles[0]!];
     if (exercise === 'dumbbell-curl' && (Math.abs(values[0]-values[1]) > 30 ||
         this.phase(values[0]) !== this.phase(values[1]))) {
       return this.invalid('curl-not-bilateral', false);

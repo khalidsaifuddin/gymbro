@@ -13,6 +13,15 @@ it('requires opt-in for guest import and keeps account caches isolated',async()=
  await expect(store.enqueue(local,'00000000-0000-4000-8000-000000000012',true)).rejects.toThrow(/owner/i);
  await store.close();
 });
+it('keeps local camera configuration out of API payloads and preserves it across history and conflict replacement',async()=>{
+ const store=new SyncStore(new IDBFactory(),'test');const value={...record(),preferences:{...record().preferences,cameraView:'rear-left' as const}};
+ const local=await store.save(value,0);await store.enqueue(local,owner,true);const job=(await store.claim(owner))!;
+ expect(JSON.stringify(job.envelope)).not.toContain('cameraView');
+ const remote={...job.envelope.workout!,revision:1};await store.acknowledge(job,{mutation_id:job.mutationId,workout_id:local.id,revision:1,deleted:false});
+ await store.receive(owner,[{...remote,revision:2}]);let latest=(await store.list())[0];expect(latest.preferences.cameraView).toBe('rear-left');
+ await store.enqueue(latest,owner);const next=(await store.claim(owner))!;await store.markConflict(next,{...remote,revision:3});
+ await store.resolve(owner,local.id,'server');latest=(await store.list())[0];expect(latest.preferences.cameraView).toBe('rear-left');await store.close();
+});
 it('retains the exact in-flight envelope after reload and queues newer local edits only after acknowledgement',async()=>{
  const factory=new IDBFactory();let store=new SyncStore(factory,'test');let local=await store.save(record(),0);await store.enqueue(local,owner,true);
  const sent=(await store.claim(owner))!;expect(sent.status).toBe('sending');await store.close();store=new SyncStore(factory,'test');

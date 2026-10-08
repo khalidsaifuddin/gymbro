@@ -6,6 +6,8 @@ Status: implementasi web runnable dengan deteksi MediaPipe lokal, mode kamera/lo
 
 Panduan instalasi, startup, OAuth, tes, dan kelanjutan Codex CLI: [localhost-guide.md](docs/localhost-guide.md).
 
+Tahap 7 menyediakan pilihan sudut kamera yang terkunci selama sesi dan pulih setelah reload, serta side tracking untuk profil samping/diagonal. Akurasi tiap sudut belum divalidasi pada workout nyata; lihat [validation-stage-7.md](docs/validation-stage-7.md).
+
 ## Mulai dari dokumen
 
 - [Implementation plan dan urutan TDD](docs/implementation-plan.md)

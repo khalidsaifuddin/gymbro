@@ -1,9 +1,11 @@
 import type {ExerciseId,SessionSnapshot} from '../domain/workout';
 import {validateSnapshot} from '../domain/workout-snapshot';
+import {isCameraView,type CameraView} from '../domain/camera-view';
 
 export type WorkoutPreferences={
  profile:'auto'|ExerciseId;restSeconds:Partial<Record<ExerciseId,number>>;
  manualExercise:ExerciseId;manualReps:string;manualLoad:string;
+ cameraView?:CameraView;
 };
 export type LocalWorkout={id:string;revision:number;snapshot:SessionSnapshot;preferences:WorkoutPreferences};
 const exercises=['squat','push-up','dumbbell-curl','machine-shoulder-press','bench-press'];
@@ -12,7 +14,8 @@ function validateRecord(value:LocalWorkout):LocalWorkout {
  if(!value||typeof value.id!=='string'||!value.id||!Number.isSafeInteger(value.revision)||value.revision<0||
    Object.keys(value).some(k=>!['id','revision','snapshot','preferences'].includes(k)))return fail();
  const p=value.preferences;
- if(!p||Object.keys(p).some(k=>!['profile','restSeconds','manualExercise','manualReps','manualLoad'].includes(k))||
+ if(!p||Object.keys(p).some(k=>!['profile','restSeconds','manualExercise','manualReps','manualLoad','cameraView'].includes(k))||
+   (p.cameraView!==undefined&&!isCameraView(p.cameraView))||
    !['auto',...exercises].includes(p.profile)||!exercises.includes(p.manualExercise)||
    typeof p.manualReps!=='string'||typeof p.manualLoad!=='string'||!p.restSeconds||
    Object.entries(p.restSeconds).some(([k,v])=>!exercises.includes(k)||!Number.isSafeInteger(v)||v!<0||v!>3600))return fail();
@@ -45,19 +48,22 @@ export class WorkoutStore {
  }
  async save(value:LocalWorkout,expectedRevision:number):Promise<LocalWorkout> {
   const record=validateRecord(value),db=await this.open();
-  return this.mutate(db,record.id,expectedRevision,store=>store.put({...record,revision:expectedRevision+1}))
+  return this.mutate(db,record.id,expectedRevision,(store,previous)=>{
+   if(previous&&(previous.preferences.cameraView??'auto')!==(record.preferences.cameraView??'auto'))throw new Error('Camera view is fixed for this workout session');
+   store.put({...record,revision:expectedRevision+1});
+  })
    .then(()=>({...record,revision:expectedRevision+1}));
  }
  async remove(id:string,expectedRevision:number):Promise<void> {
   const db=await this.open();await this.mutate(db,id,expectedRevision,store=>store.delete(id));
  }
- private mutate(db:IDBDatabase,id:string,revision:number,write:(store:IDBObjectStore)=>void):Promise<void> {
+ private mutate(db:IDBDatabase,id:string,revision:number,write:(store:IDBObjectStore,previous:LocalWorkout|undefined)=>void):Promise<void> {
   return new Promise((resolve,reject)=>{
    const tx=db.transaction('workouts','readwrite'),store=tx.objectStore('workouts'),request=store.get(id);
    let failure:Error|null=null;
    request.onsuccess=()=>{
     if((request.result?.revision??0)!==revision){failure=new Error('Local revision conflict; reload the stored version before editing');tx.abort();return;}
-    write(store);
+    try{write(store,request.result);}catch(error){failure=error instanceof Error?error:new Error('Browser storage write failed');tx.abort();}
    };
    tx.oncomplete=()=>resolve();tx.onabort=()=>reject(failure??tx.error??new Error('Browser storage write failed'));
   });

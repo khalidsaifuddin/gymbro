@@ -2,6 +2,8 @@
 
 Status: domain, prototipe kamera, UI/persistence/video, tiga schema PostgreSQL, API/auth/sync dan integrasi web telah diimplementasikan. Lihat plan/validation tiap tahap dan tasks OpenSpec. Google login eksternal memerlukan konfigurasi; corpus/akurasi/perangkat nyata mengikuti live testing setelah runnable localhost. Deployment/native menyusul.
 
+Tahap 7 menambahkan pilihan sudut yang terkunci selama sesi, recovery konfigurasi lokal, dan pelacakan sisi tubuh untuk profil samping/diagonal. Lihat `implementation-stage-7.md` serta `validation-stage-7.md`; ini belum membuktikan akurasi perspektif nyata.
+
 ## Cara kerja setiap tahap
 
 Sebelum menulis kode, uraikan task yang sedang dikerjakan beserta skenario penerimaan, file terdampak, dan perintah validasinya. Ikuti RED → GREEN → REFACTOR dan simpan hasil tes sebenarnya. Dokumentasi tidak memerlukan tes aplikasi palsu.

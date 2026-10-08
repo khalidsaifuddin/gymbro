@@ -48,7 +48,7 @@ export class SyncStore extends WorkoutStore{
   if(!job.server){binding.deleted=true;s.workouts=s.workouts.filter(x=>x.id!==id);return;}
   binding.serverRevision=job.server.revision;
   if(choice==='local'){if(!local)throw new Error('Local workout missing');s.outbox.push(binding.deleteRequested?deletion(local,binding):upsert(local,binding));}
-  else{const remote=fromDTO(job.server,owner);remote.record.revision=(local?.revision??0)+1;s.workouts=s.workouts.filter(x=>x.id!==id);s.workouts.push(remote.record);Object.assign(binding,remote.binding,{deleteRequested:false});}
+  else{const remote=fromDTO(job.server,owner);if(local?.preferences.cameraView!==undefined)remote.record.preferences.cameraView=local.preferences.cameraView;remote.record.revision=(local?.revision??0)+1;s.workouts=s.workouts.filter(x=>x.id!==id);s.workouts.push(remote.record);Object.assign(binding,remote.binding,{deleteRequested:false});}
  });}
  async deleteWorkout(record:LocalWorkout,owner:string):Promise<void>{await this.transaction(s=>{
   const binding=s.bindings.find(x=>x.workoutId===record.id);if(!binding||binding.ownerId!==owner)throw new Error('Workout owner differs');if(binding.deleted)return;
@@ -63,7 +63,7 @@ export class SyncStore extends WorkoutStore{
  async receive(owner:string,workouts:WorkoutDTO[],baseline?:Record<string,number>):Promise<void>{await this.transaction(s=>{
   const ids=new Set(workouts.map(x=>x.id));
   for(const w of workouts){const binding=s.bindings.find(x=>x.workoutId===w.id),local=s.workouts.find(x=>x.id===w.id);if(binding&&(binding.ownerId!==owner||binding.deleted||binding.deleteRequested)||s.outbox.some(j=>j.envelope.workout_id===w.id))continue;if(!binding&&local)throw new Error('Remote ID collides with guest workout');if(binding&&w.revision<=binding.serverRevision)continue;
-   const remote=fromDTO(w,owner);remote.record.revision=(local?.revision??0)+1;s.workouts=s.workouts.filter(x=>x.id!==w.id);s.workouts.push(remote.record);s.bindings=s.bindings.filter(x=>x.workoutId!==w.id);s.bindings.push(remote.binding);
+   const remote=fromDTO(w,owner);if(local?.preferences.cameraView!==undefined)remote.record.preferences.cameraView=local.preferences.cameraView;remote.record.revision=(local?.revision??0)+1;s.workouts=s.workouts.filter(x=>x.id!==w.id);s.workouts.push(remote.record);s.bindings=s.bindings.filter(x=>x.workoutId!==w.id);s.bindings.push(remote.binding);
   }
   for(const b of s.bindings)if(b.ownerId===owner&&b.serverRevision>0&&(!baseline||baseline[b.workoutId]===b.serverRevision)&&!ids.has(b.workoutId)&&!s.outbox.some(j=>j.envelope.workout_id===b.workoutId)){b.deleted=true;s.workouts=s.workouts.filter(x=>x.id!==b.workoutId);}
  });}

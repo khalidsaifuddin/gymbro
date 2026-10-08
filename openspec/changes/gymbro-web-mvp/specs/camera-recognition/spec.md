@@ -34,6 +34,50 @@ Aplikasi SHALL memberi panduan kamera sesuai latihan dan peringatan saat tubuh t
 - **WHEN** pandangan valid kembali setelah siklus terputus
 - **THEN** hitungan berlanjut dari hasil terverifikasi tanpa menghitung gerakan yang tidak terlihat
 
+### Requirement: Fixed camera position throughout the workout session
+
+Aplikasi SHALL memberi instruksi agar posisi fisik kamera tetap selama seluruh sesi. Perubahan posisi dilakukan pada sesi baru. Dukungan otomatis suatu sudut SHALL hanya diklaim setelah kombinasi sudut/latihan tersebut dievaluasi; pose estimation saja bukan bukti dukungan.
+
+#### Scenario: Recover the fixed camera view
+- **WHEN** catatan sesi aktif dipulihkan setelah reload
+- **THEN** arah kamera lokal yang tersimpan tetap terkunci dan kamera diaktifkan kembali dari posisi semula
+
+#### Scenario: Exercise changes at the same camera position
+- **WHEN** pengguna mengganti latihan dalam sesi yang belum selesai
+- **THEN** posisi kamera tetap sama dan pencatatan manual tersedia jika pandangan tidak cukup untuk deteksi otomatis latihan berikutnya
+
+#### Scenario: Position adjustment needs another session
+- **WHEN** pengguna memerlukan posisi kamera berbeda
+- **THEN** pengguna menyelesaikan sesi saat ini sebelum memulai sesi baru dengan posisi tersebut
+
+#### Scenario: Detected view interruption
+- **WHEN** gangguan pandangan terdeteksi ketika set berlangsung
+- **THEN** aplikasi membuang siklus parsial, mempertahankan reps terverifikasi, menghentikan hitungan dan penutupan set otomatis, serta meminta pemulihan pandangan dari posisi semula
+
+### Requirement: Local camera view selection and recovery
+
+Aplikasi SHALL menyediakan pilihan arah sebelum sesi dan menguncinya sampai sesi selesai, termasuk saat pause, istirahat dan pergantian latihan. Recovery lokal SHALL mempertahankan pilihan; catatan lama tanpa arah memakai panduan default yang terkunci.
+
+#### Scenario: Select a direction before the workout
+- **WHEN** sesi belum dimulai
+- **THEN** pengguna dapat memilih depan, belakang, diagonal kiri/kanan depan/belakang, samping kiri/kanan, atau panduan latihan default
+
+#### Scenario: Change direction while paused
+- **WHEN** sesi telah dimulai dan sedang dijeda
+- **THEN** pilihan arah tetap terkunci sampai pengguna menyelesaikan sesi dan memulai workout baru
+
+### Requirement: Consistent visible-side tracking
+
+Profil samping/diagonal SHALL menggunakan sisi tubuh dengan sendi relevan terlihat secara konsisten untuk squat, push-up dan press. Perubahan sisi yang dipantau SHALL membuang siklus parsial. Curl otomatis SHALL tetap memerlukan kedua lengan terlihat dan bergerak serempak. Pilihan arah SHALL tidak dijadikan bukti label latihan otomatis atau mengatasi landmark/geometry invalid.
+
+#### Scenario: The tracked limb becomes occluded
+- **WHEN** sisi tubuh yang dipantau hilang dan sisi lain menjadi terlihat di tengah siklus
+- **THEN** observasi pergantian sisi menghentikan siklus dan rep berikutnya memerlukan siklus lengkap dari sisi yang baru
+
+#### Scenario: A single arm is visible during curl
+- **WHEN** hanya satu lengan terlihat pada profil samping atau diagonal
+- **THEN** aplikasi menghentikan hitungan curl otomatis dan menyediakan pencatatan manual
+
 ### Requirement: Exercise transitions
 
 Aplikasi SHALL mengizinkan penggantian latihan otomatis di antara set dan meminta konfirmasi ketika gerakan berbeda terdeteksi pada set aktif.

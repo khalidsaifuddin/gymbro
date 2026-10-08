@@ -18,7 +18,7 @@ export function useAccount(){
  };
  const flush=async()=>{
   if(busy.current||!userRef.current)return;
-  busy.current=true;if(alive.current)setWorking(true);const expected=userRef.current.id;
+  busy.current=true;if(alive.current)setWorking(true);const expected=userRef.current.id;let succeeded=false;
   try{
    if(!navigator.onLine)throw new Error('offline');const current=await identify();if(!current||current.id!==expected){setStatus('Akun berubah; antrean akun lama tetap disimpan');return;}
    for(let n=0;n<30;n++){
@@ -33,8 +33,19 @@ export function useAccount(){
     await store.current.acknowledge(job,data as Outcome);
    }
    const remaining=await store.current.jobs(expected);setStatus(remaining.some(j=>j.status==='conflict')?'Konflik: pilih hasil lokal atau server':remaining.length?'Sinkronisasi masih tertunda':'Sinkronisasi selesai');
+   succeeded=true;
   }catch(error){if(alive.current)setStatus(!navigator.onLine?'Tersimpan lokal; menunggu koneksi':error instanceof Error&&error.message==='login'?'Login diperlukan; antrean tetap disimpan':'Sinkronisasi tertunda; hasil tetap tersimpan lokal');}
-  finally{busy.current=false;if(alive.current)setWorking(false);await refresh();}
+  finally{
+   busy.current=false;if(alive.current)setWorking(false);await refresh();
+   // A local save may enqueue after the last empty claim while its notice is
+   // ignored by the busy guard. Recheck after releasing it; failures still use
+   // the normal online/manual/timer retry, and conflicts wait for user choice.
+   if(succeeded&&alive.current&&userRef.current?.id===expected){
+    try{const pending=await store.current.jobs(expected);
+     if(alive.current&&userRef.current?.id===expected&&pending.some(j=>j.status!=='conflict'))void flush();
+    }catch{if(alive.current)setStatus('Sinkronisasi tertunda; hasil tetap tersimpan lokal');}
+   }
+  }
  };
  useEffect(()=>{
   alive.current=true;

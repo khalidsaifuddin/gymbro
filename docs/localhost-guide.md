@@ -27,6 +27,8 @@ bash scripts/start-local.sh
 
 Jika repo sudah ada, gunakan `git pull --ff-only` setelah menyimpan perubahan lokal. Script startup membangun binary Go, menerapkan versioned SQL migrations secara transactional, lalu menyajikan API dan build web pada origin yang sama. Buka **localhost port 8080**. Terminal tetap berjalan; hentikan server dengan Ctrl+C. Jalankan kembali script untuk restart. Ulangi `npm --prefix frontend run build:web` setelah perubahan frontend; reload browser setelah cache service worker berganti.
 
+Selama PR tahap 7 belum di-merge, fitur pilihan sudut berada di branch `feat/fixed-camera-views`. Untuk checkout baru dari clone `main`, jalankan `git fetch origin feat/fixed-camera-views` lalu `git switch --track origin/feat/fixed-camera-views` sebelum build. Jika branch lokal itu sudah ada, gunakan `git switch feat/fixed-camera-views`. Setelah PR di-merge, fitur tersedia melalui pembaruan `main` biasa.
+
 Database development berada di loopback port 54329, database/user `gymbro_local`. Password default `gymbro-local-development-only` hanya contoh development lokal. Compose menyimpan data dalam volume `gymbro_local-postgres`. Untuk mengganti konfigurasi, salin `.env.example` menjadi `.env`, lalu isi secara lokal. Mengganti password pada Compose tidak otomatis mengubah password di volume PostgreSQL yang sudah diinisialisasi. Jangan commit `.env` atau credential nyata.
 
 ```bash
@@ -63,10 +65,12 @@ Login tidak otomatis memindahkan workout tamu. Pilih **Impor workout tamu** untu
 1. Catat bench press manual 10 reps dengan total 40 kg. Summary harus menghasilkan 1 set, 10 reps, volume 400 kg. Selesaikan, reload, lalu **Lihat workout**.
 2. Buka mode log untuk mengubah reps/beban, timer rest, dan merge set selesai. Raw reps kamera tetap terpisah dari koreksi.
 3. Tunggu **Aplikasi dan model siap offline** sebelum memutus jaringan. Reload/recovery memulihkan catatan, dengan sesi aktif kembali dalam keadaan jeda.
-4. Untuk kamera, baca panduan latihan, pilih profil atau otomatis, dan tampilkan sendi yang relevan. Profile selection bukan hasil klasifikasi otomatis. Gate akurasi belum diuji pada workout nyata.
+4. Sebelum memulai workout, pilih **Sudut kamera**: depan, belakang, diagonal kiri/kanan depan/belakang, samping kiri/kanan, atau panduan latihan default. Kiri/kanan mengacu pada tubuh pengguna. Pilihan terkunci selama sesi, termasuk saat pause, istirahat, dan pergantian latihan; untuk posisi lain pilih **Selesaikan workout** lalu **Workout baru**. Pilih profil latihan atau otomatis, baca panduan sendi yang harus terlihat, dan pertahankan posisi fisik kamera. Profile selection bukan hasil klasifikasi otomatis. Jika posisi yang sama tidak cocok untuk latihan berikutnya, catat manual. Gate akurasi tiap sudut belum diuji pada workout nyata.
 5. Rekam video default mati. Aktifkan sebelum sesi, simpan file tiap segmen setelah selesai atau buang. Pause/resume menghasilkan segmen terpisah; reload tidak memulihkan video.
 
 Untuk kamera dari perangkat lain melalui alamat IP jaringan, diperlukan HTTPS. Deteksi browser pada localhost desktop dapat diuji terlebih dahulu; jangan menganggap pengujian kamera sintetis sebagai bukti dukungan perangkat fisik.
+
+Pilihan sudut tersimpan lokal dan dipulihkan setelah reload bersama catatan sesi. Sesi lama tanpa field sudut, atau riwayat dari perangkat lain, memakai panduan default yang terkunci; gunakan posisi fisik semula atau pencatatan manual. Konfigurasi sudut tidak disinkronkan ke backend. Aplikasi menangani sendi hilang dan pergantian sisi tubuh, tetapi belum memiliki detektor khusus untuk setiap perpindahan kamera. Curl otomatis selalu memerlukan kedua lengan terlihat dan bergerak serempak.
 
 ## Menjalankan tes
 

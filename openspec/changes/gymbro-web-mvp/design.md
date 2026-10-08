@@ -26,6 +26,12 @@ Pisahkan raw prediction dari exercise pilihan pengguna. Poor visibility/ambiguou
 
 Evaluasi menggunakan contoh workout berlabel yang berizin dengan tuning/evaluation terpisah. Simpan manifest label dan hasil metrik, bukan mengunggah kamera pengguna ke server. Synthetic keypoint fixtures berguna untuk logika tetapi tidak menggantikan ≥20 set/gerakan dari ≥5 orang pada uji nyata.
 
+### Posisi kamera sesi (tahap 7)
+
+Pilihan `cameraView` terpisah dari profil latihan dan dikunci setelah sesi dibuat, termasuk pause/rest/recovery. Field optional berada pada preferences IndexedDB; catatan lama tanpa field memakai default, sedangkan penerimaan riwayat/conflict server mempertahankan konfigurasi lokal workout yang sama. Tidak mengubah kontrak hasil API/database dan tidak mengirim metadata pose. Dari perangkat lain, pilihan arah sebelumnya tidak tersedia; panduan default berlaku.
+
+Untuk view samping/diagonal, adapter memilih satu sisi dengan sendi relevan terlihat dan confidence terbaik, mempertahankannya selama valid, serta mengeluarkan observasi invalid ketika berganti sisi. Curl tetap dua lengan. View default/depan/belakang mempertahankan syarat visibility kedua sisi. Sudut sendi tetap 2D dengan koreksi aspect ratio; fixture menguji kontinuitas, bukan akurasi perspektif nyata. Kamera bergerak selama sesi tidak didukung; tracking loss bukan detektor perpindahan kamera yang terjamin.
+
 ### Backend dan persistence
 
 Gunakan layout `backend/core/entity`, `core/repository`, `core/usecase/<fitur>`, `handler/api/<fitur>`, `repository/<fitur>-repo`, `config`, `pkg`, serta composition root. Constructor injection dan interface berada di core; Gin/GORM hanya adapter. REST/JSON mengirim hasil workout, tidak menerima video.

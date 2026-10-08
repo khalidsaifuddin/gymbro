@@ -12,6 +12,7 @@
 - Arsitektur backend mengacu pada pola backend https://github.com/khalidsaifuddin/widyaprada/tree/main/backend. Stack MVP: Gin, GORM, PostgreSQL, dan migrasi database berversi. Redis tidak diperlukan pada MVP. Domain dan use case tidak bergantung pada Gin/GORM.
 - Gerakan MVP: squat, push-up, dumbbell biceps curl, seated machine shoulder press, dan flat barbell bench press. Incline, decline, dan dumbbell bench press berada di luar MVP.
 - Satu orang per sesi, kamera diam, dan bagian tubuh yang diperlukan terlihat jelas. Aplikasi memberi panduan posisi kamera sesuai latihan dan meminta penyesuaian saat pandangan terhalang.
+- Posisi kamera dipilih sebelum sesi workout dan tetap sampai sesi selesai, termasuk saat istirahat dan pergantian latihan. Perpindahan posisi memerlukan sesi baru. Pilihan beberapa sudut direncanakan; dukungan otomatis tiap kombinasi sudut/latihan harus divalidasi, bukan diasumsikan dari kemampuan MediaPipe.
 - Deteksi berjalan langsung di browser; video tidak diunggah ke server. Backend menyimpan hasil workout.
 - Perekaman video mati secara default dan harus diaktifkan sebelum workout. Setelah workout, pengguna dapat menyimpan video ke perangkat atau membuangnya; MVP tidak menyimpan video di cloud.
 - Berat beban dimasukkan pengguna, bukan ditentukan dari kamera.
