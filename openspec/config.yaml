@@ -1,0 +1,66 @@
+schema: spec-driven
+
+context: |
+  Language: Indonesian
+  All artifacts must be written in Indonesian.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+  Product: Gymbro, camera-based workout recognition and set/rep counting.
+  Backend: Go with clean architecture. Frontend: React Native, web first, then iOS and Android.
+  Frontend recommendation accepted: Expo with React Native Web and platform-specific camera/detection adapters.
+  Backend structural reference: khalidsaifuddin/widyaprada/backend; inspect docs/backend-architecture-reference.md.
+  Backend MVP stack: Gin, GORM, PostgreSQL, versioned migrations; no Redis. Domain/use cases must not import Gin/GORM.
+  MVP exercises: squat, push-up, dumbbell biceps curl, seated machine shoulder press, flat barbell bench press.
+  One person per session, stationary camera, visible relevant body parts.
+  Detection runs in the browser; do not upload video to the server.
+  Video recording is off by default; optional recordings can be saved to the user's device or discarded.
+  Uncertain recognition must allow manual exercise selection. Count complete movement cycles only; allow post-set corrections.
+  Initially end a set after 15 seconds without repetitions, with manual ending and merging incorrectly split sets.
+  Summary includes exercises, reps per set, entered load, total sets/reps, workout duration, and rest duration. No calorie estimates or form scoring in MVP.
+  Guest workouts save locally; Google login enables cross-device history with opt-in migration of guest results.
+  Continue workouts offline after app/model loading and sync results when connectivity returns.
+  Active workout UI includes camera, recognized exercise, set/rep counters, rest timer, camera warnings, pause, and finish.
+  User supplied Hevy as a workout-tracking UI reference; verify asset licenses before adopting exercise animations.
+  Produce original editable SVG demonstrations for all five exercises, licensed CC-BY-4.0; these assets do not exist yet.
+  Default rest target is 2 minutes, editable per exercise; users may start sooner. Rest starts at the end of the last repetition.
+  Loads use kg: barbell includes bar, dumbbell input is per dumbbell, machine follows selected load. Volume is reps times total external load; no bodyweight volume estimate.
+  Read docs/product-requirements.md and GLOSSARY.md for agreed requirements and terminology.
+  MVP product decisions are settled; implementation and accuracy are not yet verified.
+  Tracking loss suspends counting and automatic set closure, retaining verified reps and discarding interrupted cycles.
+  Automatic exercise changes are allowed between sets; confirmation is required during an active set.
+  Automatic dumbbell curl supports simultaneous bilateral movement; alternating/unilateral curl is manual in MVP.
+  Browser targets: Chrome/Edge desktop and Chrome Android. Pause/background suspends detection and recording; recover workout records after reload, but do not promise recovery of recorded video files.
+  Resolve cross-device conflicts explicitly; offline retries must not duplicate workouts. Support workout/account deletion without stale-sync resurrection.
+  Accuracy targets per exercise: at least 90% correct set labels and at least 90% sets within one rep error, on at least 20 sets from at least 5 people. Unknown labels are failures; evaluate raw automatic results separately from corrections.
+  PostgreSQL schemas: public for transactions/operational state, ref for master data, log for partition-ready activity tables. See docs/database-design.md.
+  Always start implementation with a written plan and use TDD (RED, GREEN, REFACTOR). See AGENTS.md and docs/implementation-plan.md.
+
+rules:
+  proposal:
+    - State scope exclusions and distinguish planned behavior from verified capabilities.
+  design:
+    - Include schema ownership, offline conflict/deletion semantics, and unproven recognition risks.
+  tasks:
+    - Start each implementation milestone with a concrete implementation plan and failing behavioral tests, then GREEN and REFACTOR.
+    - Separate automated validation from real-device and labeled-workout accuracy validation.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always state what is out of scope
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing

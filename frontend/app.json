@@ -1,0 +1,9 @@
+{
+  "expo": {
+    "name": "Gymbro",
+    "slug": "gymbro",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "web": { "bundler": "metro", "output": "single" }
+  }
+}

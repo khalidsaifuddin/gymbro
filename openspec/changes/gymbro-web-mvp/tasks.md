@@ -1,0 +1,67 @@
+# Tasks
+
+Checkbox mencatat pekerjaan yang telah selesai atau masih terbuka. Ikuti `AGENTS.md` dan `docs/implementation-plan.md`; setiap tahap dimulai dari plan tertulis sebelum kode.
+
+## 1. Fondasi dan domain workout
+
+- [x] 1.1 Tulis plan tahap domain dengan file, dependency pins, acceptance scenarios, dan command tes; verifikasi setiap aturan tracking dipetakan ke skenario.
+- [x] 1.2 Scaffold backend berlapis serta frontend Expo/TypeScript dan test runners; verifikasi frozen install, type check, dan Go module resolution tanpa mengklaim empty-test run sebagai validasi perilaku.
+- [x] 1.3 RED: tulis tes complete/partial/interrupted reps serta bilateral curl; verifikasi kegagalan berasal dari perilaku yang belum tersedia.
+- [x] 1.4 GREEN: implementasikan state machine reps agar tes 1.3 lulus; REFACTOR boundary domain/adapter dan rerun suite yang sama.
+- [x] 1.5 RED: tes tracking loss, boundary 15 detik, change confirmation, manual end, merge/correction, pause, dan rest; verifikasi setiap tes gagal sesuai skenario.
+- [x] 1.6 GREEN/REFACTOR: implementasikan aturan waktu dan koreksi memakai clock injeksi; verifikasi tes 1.5 lulus tanpa sleep nyata.
+- [x] 1.7 RED → GREEN → REFACTOR: normalisasi kg, implement count, beban NULL/bodyweight, dan summary setelah edit; verifikasi contoh dua dumbbell 10 kg × 10 reps menghasilkan 200 kg.
+- [x] 1.8 Dokumentasikan API domain serta command tes aktual; verifikasi contoh replay menghasilkan set/reps yang diharapkan.
+
+## 2. Prototipe pengenalan kamera
+
+- [ ] 2.1 Tulis plan prototipe untuk lima gerakan, verifikasi sumber/lisensi/checksum model, serta pin versi; deliver manifest model dan protokol evaluasi yang memisahkan tuning/evaluation.
+- [ ] 2.2 RED: tes adapter keypoint/replay untuk smoothing, debounce, confidence rendah, landmark hilang, partial cycles, dan non-workout negatives; verifikasi failure sebelum implementasi.
+- [ ] 2.3 GREEN/REFACTOR: implementasikan adapter browser/worker dan temporal classifier; verifikasi replay tests lulus dan tidak ada upload media/pose melalui network assertions.
+- [ ] 2.4 RED → GREEN → REFACTOR: unknown/manual fallback, panduan posisi, tracking-loss guard, serta pergantian latihan; verifikasi scenario tests pada kelima gerakan.
+- [ ] 2.5 Susun contoh real-workout berlabel dan berizin minimal 20 set per gerakan dari ≥5 orang; verifikasi label, partisipan, kondisi kamera, dan split tuning/evaluation dalam manifest tanpa memakai data sintetis sebagai pengganti.
+- [ ] 2.6 Jalankan evaluasi label/reps otomatis per gerakan; deliver laporan kedua metrik, unknown failures, dan gate ≥90%/≥90%, serta diagnosis jika gate gagal.
+- [ ] 2.7 Dokumentasikan batas kamera/model dan hasil prototipe sebenarnya; verifikasi klaim dukungan cocok dengan laporan, bukan hasil yang dikoreksi pengguna.
+
+## 3. UI, persistence lokal, dan rekaman
+
+- [ ] 3.1 Tulis plan UI/outbox/recording dengan skenario tiap adapter; verifikasi komponen kamera dan log berbagi satu session aggregate.
+- [ ] 3.2 RED: interaction tests penghitung besar, kartu/tabel set, prior result, input beban, timer, koreksi, serta summary; verifikasi failures sesuai kebutuhan.
+- [ ] 3.3 GREEN/REFACTOR: implementasikan mode kamera dan log ala referensi Hevy; verifikasi tests 3.2 lulus dengan label beban jelas dan summary konsisten.
+- [ ] 3.4 RED → GREEN → REFACTOR: IndexedDB incremental save, reload recovery, permission denial, pause/background, cache/model readiness, dan network interruption; verifikasi data tidak hilang setelah reload dan offline continuation.
+- [ ] 3.5 RED → GREEN → REFACTOR: recorder default off, opt-in sebelum sesi, pause, unsupported MIME, save/discard lokal; verifikasi workout tetap tersimpan saat video dibuang dan tidak ada video upload.
+- [ ] 3.6 Buat lima SVG original beserta source, metadata atribusi, dan CC-BY-4.0 asset license; verifikasi tiap gerakan memiliki animasi yang cocok, lisensi dapat ditemukan, dan rendering bekerja di target web.
+- [ ] 3.7 Dokumentasikan dan jalankan smoke test guest workout serta recording pada perangkat nyata; deliver hasil browser/perangkat, permission flow, dan keterbatasan video reload yang benar.
+
+## 4. Database tiga schema dan activity logs
+
+- [ ] 4.1 Tulis plan migration/repository dengan daftar tabel qualified dan partition lifecycle; verifikasi mapping sesuai `docs/database-design.md` dan siapkan PostgreSQL disposable.
+- [ ] 4.2 RED: integration tests fresh install, constraints/FKs, owner scoping, aggregate transaction, dan NUMERIC load; verifikasi failures sebelum migration/repository.
+- [ ] 4.3 GREEN/REFACTOR: versioned migrations `ref`/`public` serta repository GORM qualified; verifikasi suite 4.2 lulus dan domain/use case tidak mengimpor adapter.
+- [ ] 4.4 RED: integration tests log insertion, UTC month boundary, delayed offline event, absent-partition fallback, dan expiry isolation; verifikasi failure pada skenario partition.
+- [ ] 4.5 GREEN/REFACTOR: migration log parents/monthly partitions/fallback dan maintenance command; verifikasi 4.4 lulus, fallback overlap dapat dipindahkan, serta drop partisi tidak menghapus state public/ref.
+- [ ] 4.6 Dokumentasikan fresh migration, seed repeatability, maintenance, dan rollback pada DB disposable; verifikasi command yang ditulis berhasil tanpa merusak data pengguna.
+
+## 5. API, Google login, riwayat dan sinkronisasi
+
+- [ ] 5.1 Tulis plan API/auth/outbox dengan kontrak request/response dan aturan revisi; verifikasi ownership selalu berasal dari sesi server.
+- [ ] 5.2 RED → GREEN → REFACTOR: katalog dan owner-scoped history/mutation handlers serta use cases; verifikasi validasi nested IDs dan rejection akses akun lain.
+- [ ] 5.3 RED → GREEN → REFACTOR: verified Google identity, state/nonce/PKCE, session hashing/expiry/logout dan CSRF; verifikasi penolakan identitas/sesi tidak sah serta tidak ada token plaintext di DB/log.
+- [ ] 5.4 Periksa binding/config names yang tersedia sebelum menambahkan kebutuhan OAuth; setelah nilai sah tersedia, jalankan login Google end-to-end dan dokumentasikan callback/config tanpa secret. Catat blocker bila belum tersedia.
+- [ ] 5.5 RED: PostgreSQL concurrency tests retry outcome identik, reuse mutation ID beda payload, revision conflict, dan transaksi atomic; verifikasi failures sebelum sync handler.
+- [ ] 5.6 GREEN/REFACTOR: idempotent mutation protocol dan outbox client dengan explicit conflict choice; verifikasi 5.5 lulus, retry respons hilang tidak duplikat, dan dua perangkat tidak overwrite diam-diam.
+- [ ] 5.7 RED → GREEN → REFACTOR: opt-in guest import, workout/account deletion, log identifier cleanup, session invalidation, dan stale-sync tombstone; verifikasi data terhapus tidak muncul kembali.
+- [ ] 5.8 Dokumentasikan kontrak API, errors/revisions, dan auth lifecycle; verifikasi contoh request sesuai integration tests serta history sesudah koreksi cocok dengan summary.
+
+## 6. Validasi integrasi dan perangkat
+
+- [ ] 6.1 Tulis plan end-to-end serta matriks Chrome/Edge desktop dan Chrome Android; verifikasi setiap capability memiliki alur penerimaan dan jenis bukti yang sesuai.
+- [ ] 6.2 RED → GREEN → REFACTOR: E2E lintas domain/UI/API untuk guest-to-account import, offline/reconnect, konflik dua client, serta delete/stale sync; verifikasi browser assertions dan persistence database sebenarnya.
+- [ ] 6.3 Jalankan build/type check frontend serta tes Go, PostgreSQL integration, dan race detector jika didukung; deliver exit status, jumlah tes, serta failed/skipped/unrun yang terpisah.
+- [ ] 6.4 Jalankan kamera/recording/pause/offline pada perangkat nyata dan evaluasi ulang lima gerakan setelah perubahan inference; deliver performa terukur dan bukti gate akurasi tanpa koreksi manual.
+- [ ] 6.5 Perbarui setup/start instructions berdasarkan command yang telah dijalankan; verifikasi cold start/readiness requests, list konfigurasi yang belum tersedia, dan jangan klaim deployment/native/Safari selesai.
+
+## Workflow follow-up
+
+- Tinjau hasil implementasi dan bukti validasi sebelum archive change serta merge spesifikasi delta menjadi spesifikasi utama.
+- Tentukan hosting HTTPS, callback OAuth, dan retention produksi sebelum deployment. Native iOS/Android dan Safari mengikuti tahap tersendiri.
