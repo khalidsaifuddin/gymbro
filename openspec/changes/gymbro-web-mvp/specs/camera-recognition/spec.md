@@ -44,6 +44,11 @@ Aplikasi SHALL memberi panduan kamera sesuai latihan dan peringatan saat tubuh t
 - **THEN** satu rep dihitung setelah ready → peak → ready tanpa harus mencapai sudut ekstrem prototipe lama
 - **AND** jitter di dekat satu ambang, gerakan parsial, curl satu tangan, dan siklus yang terputus tidak menambah rep
 
+#### Scenario: Sensitive continuous squat and curl
+- **WHEN** siklus lengkap squat/curl terlihat pada frame kontinu dengan endpoint singkat dan confidence moderat yang masih valid
+- **THEN** penghitung SHALL menerima rentang sedang tanpa membutuhkan tahan pose 80 ms
+- **AND** selisih kecil kedua lengan saat melintasi ambang curl SHALL tidak memutus siklus; kedua lengan tetap harus mencapai endpoint, sedangkan landmark hilang atau confidence sangat rendah memutus siklus
+
 ### Requirement: Camera position by exercise
 
 Aplikasi SHALL menyimpan pilihan arah kamera per latihan dan mempertahankannya selama set latihan tersebut. Pengguna SHALL dapat mengubah arah setelah berpindah latihan atau sebelum set berikutnya; perubahan arah membuang siklus parsial dan tidak menghapus repetisi terverifikasi. Dukungan otomatis suatu sudut SHALL hanya diklaim setelah kombinasi sudut/latihan tersebut dievaluasi.

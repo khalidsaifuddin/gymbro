@@ -1,10 +1,10 @@
 import type {Landmark} from './pose-phase-adapter';
 
-export function valid(point: Landmark | undefined): point is Landmark {
+export function valid(point: Landmark | undefined, minConfidence = .55): point is Landmark {
   return !!point && Number.isFinite(point.x) && Number.isFinite(point.y) &&
     point.x >= 0 && point.x <= 1 && point.y >= 0 && point.y <= 1 &&
-    Number.isFinite(point.visibility) && point.visibility! >= .55 &&
-    (point.presence === undefined || (Number.isFinite(point.presence) && point.presence >= .55));
+    Number.isFinite(point.visibility) && point.visibility! >= minConfidence &&
+    (point.presence === undefined || (Number.isFinite(point.presence) && point.presence >= minConfidence));
 }
 
 export function angle(a: Landmark, b: Landmark, c: Landmark): number | null {

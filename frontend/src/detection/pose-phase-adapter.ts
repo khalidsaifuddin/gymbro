@@ -33,7 +33,9 @@ export class PosePhaseAdapter {
   private cable: CablePoseAdapter|null=null;
 
   constructor(options: PoseOptions) {
-    this.options = {smoothingAlpha: .65, stableFrames: 2, stableMs: 80, cameraView:'auto', ...options};
+    const sensitive = options.exercise === 'squat' || options.exercise === 'dumbbell-curl';
+    this.options = {smoothingAlpha: sensitive ? .85 : .65, stableFrames: 2,
+      stableMs: sensitive ? 30 : 80, cameraView:'auto', ...options};
     const {smoothingAlpha, stableFrames, stableMs} = this.options;
     if (!isCameraView(this.options.cameraView) || !Number.isFinite(smoothingAlpha) || smoothingAlpha <= 0 || smoothingAlpha > 1 ||
         !Number.isSafeInteger(stableFrames) || stableFrames < 1 || !Number.isFinite(stableMs) || stableMs < 0) {
@@ -59,7 +61,10 @@ export class PosePhaseAdapter {
       : exercise === 'machine-shoulder-press' ? [11,13,15,23,25,27]
       : [11,13,15,23];
     const raw = frame.landmarks;
-    const eligible=([0,1] as const).filter(side=>required.every(index=>valid(raw[index+side])));
+    // Moderate confidence is usable when every measured joint remains in-frame.
+    // Missing/very weak points still invalidate the entire cycle immediately.
+    const minConfidence = isSquat || exercise === 'dumbbell-curl' ? .45 : .55;
+    const eligible=([0,1] as const).filter(side=>required.every(index=>valid(raw[index+side],minConfidence)));
     const single=allowsSingleSide(this.options.cameraView)&&exercise!=='dumbbell-curl';
     if (raw.length !== 33 || (single ? eligible.length===0 : eligible.length!==2)) {
       return this.invalid('landmarks-unavailable');
@@ -101,15 +106,19 @@ export class PosePhaseAdapter {
       : angle(points[11+side],points[13+side],points[15+side]));
     if (angles.some(value => value === null)) return this.invalid('landmarks-unavailable');
     const values: [number,number] = [angles[0]!,angles[1]??angles[0]!];
-    if (exercise === 'dumbbell-curl' && (Math.abs(values[0]-values[1]) > 30 ||
-        this.phase(values[0]) !== this.phase(values[1]))) {
+    if (exercise === 'dumbbell-curl' && Math.abs(values[0]-values[1]) > 30) {
       return this.invalid('curl-not-bilateral', false);
     }
     const alpha = this.options.smoothingAlpha;
     this.smoothed = this.smoothed
       ? [alpha*values[0]+(1-alpha)*this.smoothed[0], alpha*values[1]+(1-alpha)*this.smoothed[1]]
       : values;
-    const phase = this.phase((this.smoothed[0]+this.smoothed[1])/2);
+    // A small left/right timing difference is normal. Preserve tracking between
+    // endpoints, but require both arms to reach each endpoint before counting.
+    const armPhases = this.smoothed.map(degrees => this.phase(degrees));
+    const phase = exercise === 'dumbbell-curl'
+      ? armPhases[0] === armPhases[1] ? armPhases[0] : 'moving'
+      : this.phase((this.smoothed[0]+this.smoothed[1])/2);
     if (phase !== this.candidate || this.frames === 0) {
       this.candidate = phase; this.candidateAt = now; this.frames = 1;
     } else this.frames++;
@@ -123,8 +132,8 @@ export class PosePhaseAdapter {
     if (exercise === 'machine-shoulder-press' || exercise === 'bench-press') {
       return degrees <= 105 ? 'ready' : degrees >= 155 ? 'peak' : 'moving';
     }
-    const ready = exercise === 'dumbbell-curl' ? 145 : exercise === 'squat' ? 150 : 155;
-    const peak = exercise === 'dumbbell-curl' ? 90 : exercise === 'squat' ? 125 : exercise === 'push-up' ? 100 : 105;
+    const ready = exercise === 'dumbbell-curl' ? 140 : exercise === 'squat' ? 145 : 155;
+    const peak = exercise === 'dumbbell-curl' ? 100 : exercise === 'squat' ? 130 : exercise === 'push-up' ? 100 : 105;
     return degrees >= ready ? 'ready' : degrees <= peak ? 'peak' : 'moving';
   }
 

@@ -92,6 +92,13 @@ Checkbox mencatat pekerjaan yang telah selesai atau masih terbuka. Ikuti `AGENTS
 - [x] 10.4 RED → GREEN → REFACTOR: sudut kamera per latihan dengan recovery/kompatibilitas legacy, scrolling halaman normal, dan tema SAKA cyan.
 - [x] 10.5 Jalankan unit, typecheck, build, browser, PostgreSQL/account sync; catat batas validasi otomatis versus akurasi perangkat nyata.
 
+## 11. Repetisi yang terlewat setelah live testing
+
+- [x] 11.1 Catat plan sensitivitas prioritas pengguna dan skenario penerimaan sebelum kode.
+- [x] 11.2 RED: replay siklus kontinu singkat, curl sedikit berbeda fase, confidence moderat, serta regresi negatif.
+- [x] 11.3 GREEN/REFACTOR: parameter squat/curl responsif, bilateral tanpa reset akibat lintas ambang kecil, dan sampling kamera lebih sering.
+- [x] 11.4 Jalankan unit/type/build, catat bukti aktual serta batas evaluasi perangkat nyata.
+
 ## Workflow follow-up
 
 - Tinjau hasil implementasi dan bukti validasi sebelum archive change serta merge spesifikasi delta menjadi spesifikasi utama.

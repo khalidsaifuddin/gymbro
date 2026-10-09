@@ -124,7 +124,7 @@ export default function CameraPrototype() {
       let last=-Infinity;
       const frame=async (timestamp:number) => {
         if (epoch.current!==token||!live.current) return;
-        if (timestamp-last>=100) {
+        if (timestamp-last>=1000/30) {
           last=timestamp;
           try {
             const pose=await worker.detect(await createImageBitmap(video.current!),timestamp);
