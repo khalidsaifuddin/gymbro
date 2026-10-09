@@ -16,3 +16,28 @@ export async function openAutomaticCamera(page:Page){
  if(!await page.getByRole('button',{name:'Open automatic camera'}).count())await addExercise(page,'squat');
  await page.getByRole('button',{name:'Open automatic camera'}).click();
 }
+export async function openCameraControls(page:Page){
+ const toggle=page.getByRole('button',{name:'Open camera controls'});
+ if(await toggle.count())await toggle.click();
+}
+export async function logPlannedSet(page:Page,id:ExerciseId,reps:string,kg=''){
+ const label=exerciseCatalog[id].label;
+ let card=page.locator('.gymbro-workout-card').filter({has:page.getByRole('heading',{name:label,exact:true})});
+ if(!await card.count()){
+  await addExercise(page,id);
+  card=page.locator('.gymbro-workout-card').filter({has:page.getByRole('heading',{name:label,exact:true})});
+ }
+ for(let index=1;index<=20;index++){
+  const completed=card.getByLabel(`Completed set ${index} ${label}`);
+  if(!await completed.count()){
+   await card.getByRole('button',{name:`Add Set ${label}`}).click();
+  }
+  const checkbox=card.getByLabel(`Completed set ${index} ${label}`);
+  if(await checkbox.isChecked())continue;
+  await card.getByLabel(`Target reps set ${index} ${label}`).fill(reps);
+  await card.getByLabel(`Target kg set ${index} ${label}`).fill(kg);
+  await checkbox.check();
+  return;
+ }
+ throw new Error(`No planned set row is available for ${label}`);
+}

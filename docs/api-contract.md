@@ -22,6 +22,8 @@ Mutation/logout/delete membutuhkan cookie `gymbro_session`, header Origin persis
 
 ## Mutasi
 
+Untuk hosting dengan origin terpisah, `EXPO_PUBLIC_GYMBRO_API_URL` menunjuk API origin (`GYMBRO_API_PUBLIC_URL`). API memberi credentialed CORS hanya ke `GYMBRO_PUBLIC_URL` (origin frontend); cookie sesi tetap host-only di API, Secure di HTTPS, dan callback OAuth kembali mengarahkan pengguna ke frontend.
+
 Contoh envelope (UUID/aggregate mengikuti data milik sesi yang sama):
 
 ```json

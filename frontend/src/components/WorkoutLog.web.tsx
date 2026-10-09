@@ -42,7 +42,7 @@ export default function WorkoutLog({session,sets,history,preferences,refresh,onE
       toggle={()=>setSelected(ids=>ids.includes(set.id)?ids.filter(x=>x!==set.id):[...ids,set.id])}/>)}</tbody></table></div>
    </section>;
   })}
-  {!sets.length&&<p>Belum ada set. Gunakan kamera atau catat set manual.</p>}
+  {!sets.length&&<p>Belum ada set. Tandai target set pada latihan atau gunakan kamera.</p>}
   {sets.length>1&&<button onClick={merge}>Gabungkan set terpilih</button>}
  </div>;
 }

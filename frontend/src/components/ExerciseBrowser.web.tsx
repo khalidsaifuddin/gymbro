@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import {exerciseCatalog,exerciseIds,importedExerciseCount,isSupportedExerciseId,supportedExerciseIds,type ExerciseId,type SupportedExerciseId} from '../domain/exercises';
-import ExerciseGuide from './ExerciseGuide.web';
+import ExerciseDetails from './ExerciseDetails.web';
 
 const supportedAreas:Record<SupportedExerciseId,string>={
  squat:'Legs','push-up':'Chest','dumbbell-curl':'Arms','machine-shoulder-press':'Shoulders',
@@ -20,17 +20,7 @@ export default function ExerciseBrowser({onBack,onSelect,excluded=[]}:{onBack:()
   return (!term||`${exercise.label} ${exercise.target??''} ${area(id)}`.toLowerCase().includes(term))&&
    (equipment==='all'||exercise.equipment===equipment)&&(muscle==='all'||area(id)===muscle);
  });
- if(detail){const exercise=exerciseCatalog[detail];return <section className="saka-stack gymbro-page" aria-label="Exercise details">
-  <div className="saka-split"><button className="saka-btn saka-btn--sm" onClick={()=>setDetail(null)}>Back to Explore</button><span className="saka-kicker">Exercise guide</span></div>
-  <h1 className="gymbro-title">{exercise.label}</h1>
-  <div className="saka-card"><div className="saka-cluster"><span className="gymbro-chip">{equipmentName(exercise.equipment)}</span><span className="gymbro-chip">{area(detail)}</span>
-   {exercise.target&&<span className="gymbro-chip">{exercise.target}</span>}</div>
-   <p className="saka-prose">{exercise.loadLabel}</p>
-   {isSupportedExerciseId(detail)?<ExerciseGuide exercise={detail}/>:<><p className="saka-prose gymbro-dataset-instructions">{exercise.instructions}</p>
-    <small>Exercise instructions: hasaneyldrm/exercises-dataset (MIT). No third-party exercise media is included.</small></>}
-  </div>
-  {onSelect&&!excludedSet.has(detail)&&<button className="saka-btn is-filled" onClick={()=>onSelect(detail)}>Add {exercise.label}</button>}
- </section>;}
+ if(detail)return <ExerciseDetails exercise={detail} onBack={()=>setDetail(null)} canAdd={!!onSelect&&!excludedSet.has(detail)} onSelect={()=>onSelect?.(detail)}/>;
  return <section className="saka-stack gymbro-page" aria-label={onSelect?'Exercise picker':'Explore exercises'}>
   <div className="saka-split"><button className="saka-btn saka-btn--sm" onClick={onBack}>Back</button><span className="saka-kicker">{importedExerciseCount.toLocaleString('en-US')} imported exercises · {supportedExerciseIds.length} with camera</span></div>
   <div><div className="saka-kicker">Gymbro library</div><h1 className="gymbro-title">{onSelect?'Add Exercise':'Explore Exercises'}</h1>

@@ -39,6 +39,15 @@ describe('durable guest workout storage',()=>{
   const legacy=record('legacy');await store.save(legacy,0);
   expect((await store.list()).find(row=>row.id==='legacy')?.preferences.exercisePlan).toBeUndefined();await store.close();
  });
+ it('persists stable session row IDs and saved unchecked results with the same local snapshot',async()=>{
+  const store=new WorkoutStore(new IDBFactory(),'test'),value=record();value.preferences.sessionRows={'bench-press':[{id:'row-b',target:{reps:8,loadKg:40},resultSetId:value.snapshot.sets[0].id}]};
+  const saved=await store.save(value,0);expect((await store.list())[0].preferences.sessionRows).toEqual(value.preferences.sessionRows);
+  const unchecked=structuredClone(saved),source=unchecked.snapshot.sets.pop()!;
+  unchecked.preferences.sessionRows!['bench-press']![0]={id:'row-b',target:{reps:8,loadKg:40},savedResult:source};
+  const next=await store.save(unchecked,1);expect(next.snapshot.sets).toHaveLength(0);expect((await store.list())[0].preferences.sessionRows?.['bench-press']?.[0].savedResult?.id).toBe(source.id);
+  const invalid=structuredClone(next);invalid.preferences.sessionRows!['bench-press']![0].resultSetId='missing';
+  await expect(store.save(invalid,2)).rejects.toThrow(/session set/i);expect((await store.list())[0]).toEqual(next);await store.close();
+ });
  it('persists a selected camera view across reopen while accepting legacy records without it',async()=>{
   const factory=new IDBFactory(),a=new WorkoutStore(factory,'test');
   const selected=record('selected');selected.preferences.cameraView='rear-right';

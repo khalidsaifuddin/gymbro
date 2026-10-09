@@ -1,8 +1,21 @@
 import {WorkoutStore,type LocalWorkout} from '../storage/workout-store';
 import {fromDTO,newBinding,toDTO,type Binding,type Mutation,type Outcome,type WorkoutDTO} from './mapper';
+import {reconcileSessionSetRows} from '../domain/session-set-rows';
 export type Job={mutationId:string;ownerId:string;localRevision:number;envelope:Mutation;status:'pending'|'sending'|'conflict';server?:WorkoutDTO|null};
 type State={workouts:LocalWorkout[];bindings:Binding[];outbox:Job[]};
 const notice=()=>{if(typeof document!=='undefined')document.dispatchEvent(new Event('gymbro-storage-changed'));};
+function preserveBrowserPreferences(remote:LocalWorkout,local:LocalWorkout|undefined,conflict=false):void{
+ if(!local)return;
+ const prefs=local.preferences,next=remote.preferences;
+ if(prefs.cameraView!==undefined)next.cameraView=prefs.cameraView;
+ if(prefs.cameraViews!==undefined)next.cameraViews=structuredClone(prefs.cameraViews);
+ if(prefs.exercisePlan!==undefined)next.exercisePlan=structuredClone(prefs.exercisePlan);
+ if(prefs.sessionRows!==undefined){
+  const rows=structuredClone(prefs.sessionRows);
+  if(conflict)for(const exerciseRows of Object.values(rows))for(const row of exerciseRows??[])delete row.savedResult;
+  next.sessionRows=reconcileSessionSetRows(rows,next.exercisePlan??[],remote.snapshot.sets,crypto.randomUUID);
+ }
+}
 function upsert(record:LocalWorkout,binding:Binding):Job{
  for(const set of record.snapshot.sets)binding.occurrences[set.exercise]??=crypto.randomUUID();
  const id=crypto.randomUUID();return {mutationId:id,ownerId:binding.ownerId,localRevision:record.revision,status:'pending',envelope:{account_id:binding.ownerId,mutation_id:id,workout_id:record.id,base_revision:binding.serverRevision,operation:'upsert',occurred_at:new Date(record.snapshot.savedAt).toISOString(),workout:toDTO(record,binding)}};
@@ -49,7 +62,7 @@ export class SyncStore extends WorkoutStore{
   if(!job.server){binding.deleted=true;s.workouts=s.workouts.filter(x=>x.id!==id);return;}
   binding.serverRevision=job.server.revision;
   if(choice==='local'){if(!local)throw new Error('Local workout missing');s.outbox.push(binding.deleteRequested?deletion(local,binding):upsert(local,binding));}
-  else{const remote=fromDTO(job.server,owner);if(local?.preferences.cameraView!==undefined)remote.record.preferences.cameraView=local.preferences.cameraView;if(local?.preferences.cameraViews!==undefined)remote.record.preferences.cameraViews=structuredClone(local.preferences.cameraViews);remote.record.revision=(local?.revision??0)+1;s.workouts=s.workouts.filter(x=>x.id!==id);s.workouts.push(remote.record);Object.assign(binding,remote.binding,{deleteRequested:false});}
+  else{const remote=fromDTO(job.server,owner);preserveBrowserPreferences(remote.record,local,true);remote.record.revision=(local?.revision??0)+1;s.workouts=s.workouts.filter(x=>x.id!==id);s.workouts.push(remote.record);Object.assign(binding,remote.binding,{deleteRequested:false});}
  });}
  async deleteWorkout(record:LocalWorkout,owner:string):Promise<void>{await this.transaction(s=>{
   const binding=s.bindings.find(x=>x.workoutId===record.id);if(!binding||binding.ownerId!==owner)throw new Error('Workout owner differs');if(binding.deleted)return;
@@ -64,7 +77,7 @@ export class SyncStore extends WorkoutStore{
  async receive(owner:string,workouts:WorkoutDTO[],baseline?:Record<string,number>):Promise<void>{await this.transaction(s=>{
   const ids=new Set(workouts.map(x=>x.id));
   for(const w of workouts){const binding=s.bindings.find(x=>x.workoutId===w.id),local=s.workouts.find(x=>x.id===w.id);if(binding&&(binding.ownerId!==owner||binding.deleted||binding.deleteRequested)||s.outbox.some(j=>j.envelope.workout_id===w.id))continue;if(!binding&&local)throw new Error('Remote ID collides with guest workout');if(binding&&w.revision<=binding.serverRevision)continue;
-   const remote=fromDTO(w,owner);if(local?.preferences.cameraView!==undefined)remote.record.preferences.cameraView=local.preferences.cameraView;if(local?.preferences.cameraViews!==undefined)remote.record.preferences.cameraViews=structuredClone(local.preferences.cameraViews);remote.record.revision=(local?.revision??0)+1;s.workouts=s.workouts.filter(x=>x.id!==w.id);s.workouts.push(remote.record);s.bindings=s.bindings.filter(x=>x.workoutId!==w.id);s.bindings.push(remote.binding);
+   const remote=fromDTO(w,owner);preserveBrowserPreferences(remote.record,local);remote.record.revision=(local?.revision??0)+1;s.workouts=s.workouts.filter(x=>x.id!==w.id);s.workouts.push(remote.record);s.bindings=s.bindings.filter(x=>x.workoutId!==w.id);s.bindings.push(remote.binding);
   }
   for(const b of s.bindings)if(b.ownerId===owner&&b.serverRevision>0&&(!baseline||baseline[b.workoutId]===b.serverRevision)&&!ids.has(b.workoutId)&&!s.outbox.some(j=>j.envelope.workout_id===b.workoutId)){b.deleted=true;s.workouts=s.workouts.filter(x=>x.id!==b.workoutId);}
  });}

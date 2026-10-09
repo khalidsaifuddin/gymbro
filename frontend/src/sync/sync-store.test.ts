@@ -3,8 +3,9 @@ import {IDBFactory} from 'fake-indexeddb';
 import {WorkoutSession} from '../domain/workout';
 import {SyncStore} from './sync-store';
 import {fromDTO} from './mapper';
+import type {LocalWorkout} from '../storage/workout-store';
 const owner='00000000-0000-4000-8000-000000000011';
-function record(){const s=new WorkoutSession({clock:()=>10000,idFactory:()=>crypto.randomUUID()});s.addManualSet('bench-press',10,40);s.finish();return {id:crypto.randomUUID(),revision:0,snapshot:s.exportSnapshot(),preferences:{profile:'auto' as const,restSeconds:{},manualExercise:'squat' as const,manualReps:'10',manualLoad:''}};}
+function record():LocalWorkout{const s=new WorkoutSession({clock:()=>10000,idFactory:()=>crypto.randomUUID()});s.addManualSet('bench-press',10,40);s.finish();return {id:crypto.randomUUID(),revision:0,snapshot:s.exportSnapshot(),preferences:{profile:'auto',restSeconds:{},manualExercise:'squat',manualReps:'10',manualLoad:''}};}
 it('requires opt-in for guest import and keeps account caches isolated',async()=>{
  const store=new SyncStore(new IDBFactory(),'test'),local=await store.save(record(),0);
  await store.enqueue(local,owner);expect(await store.jobs(owner)).toEqual([]);
@@ -46,6 +47,21 @@ it('keeps local camera configuration out of API payloads and preserves it across
  await store.receive(owner,[{...remote,revision:2}]);let latest=(await store.list())[0];expect(latest.preferences.cameraView).toBe('rear-left');expect(latest.preferences.cameraViews).toEqual(value.preferences.cameraViews);
  await store.enqueue(latest,owner);const next=(await store.claim(owner))!;await store.markConflict(next,{...remote,revision:3});
  await store.resolve(owner,local.id,'server');latest=(await store.list())[0];expect(latest.preferences.cameraView).toBe('rear-left');expect(latest.preferences.cameraViews).toEqual(value.preferences.cameraViews);await store.close();
+});
+it('keeps session row IDs browser-local, reconciles server edits, and drops unchecked sources on server conflict',async()=>{
+ const store=new SyncStore(new IDBFactory(),'test'),base=record(),set=base.snapshot.sets[0];
+ base.preferences.exercisePlan=[{exercise:'bench-press',targets:[{reps:10,loadKg:40}]}];
+ base.preferences.sessionRows={'bench-press':[{id:'stable-row',target:{reps:10,loadKg:40},resultSetId:set.id}]};
+ const local=await store.save(base,0);await store.enqueue(local,owner,true);const job=(await store.claim(owner))!;
+ expect(JSON.stringify(job.envelope)).not.toContain('stable-row');
+ const first={...job.envelope.workout!,revision:1};await store.acknowledge(job,{mutation_id:job.mutationId,workout_id:local.id,revision:1,deleted:false});
+ const edited=structuredClone(first);edited.exercises[0].sets[0].reps=12;edited.revision=2;await store.receive(owner,[edited]);
+ let latest=(await store.list())[0];expect(latest.preferences.sessionRows?.['bench-press']?.[0]).toMatchObject({id:'stable-row',resultSetId:set.id,target:{reps:12,loadKg:40}});
+ const saved=latest.preferences.sessionRows!['bench-press']![0].savedResult={...set,reps:12};delete latest.preferences.sessionRows!['bench-press']![0].resultSetId;
+ latest.snapshot.sets=[];latest.revision=(await store.save(latest,latest.revision)).revision;await store.enqueue(latest,owner);
+ const pending=(await store.claim(owner))!,server={...first,revision:3,exercises:[]};await store.markConflict(pending,server);await store.resolve(owner,local.id,'server');
+ latest=(await store.list())[0];expect(latest.preferences.sessionRows?.['bench-press']?.[0].id).toBe('stable-row');expect(latest.preferences.sessionRows?.['bench-press']?.[0].savedResult).toBeUndefined();
+ expect(latest.preferences.sessionRows?.['bench-press']?.[0].target.reps).toBe(12);expect(saved.reps).toBe(12);await store.close();
 });
 it('retains the exact in-flight envelope after reload and queues newer local edits only after acknowledgement',async()=>{
  const factory=new IDBFactory();let store=new SyncStore(factory,'test');let local=await store.save(record(),0);await store.enqueue(local,owner,true);

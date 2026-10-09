@@ -42,10 +42,14 @@ Setiap kartu latihan yang memiliki detektor SHALL memiliki aksi kamera yang memb
 - **WHEN** izin kamera ditolak, tracking hilang, atau pengguna menjeda/menutup kamera
 - **THEN** panduan serta pencatatan manual tetap tersedia, dan tidak ada rep baru dari frame yang tidak diproses
 
-### Requirement: Scrollable pages and cyan theme
+### Requirement: Scrollable and viewport-safe pages
 
-Halaman browser selain kamera SHALL dapat discroll secara vertikal pada ponsel dan desktop. Tema web SHALL memakai preset cyan SAKA.
+Halaman browser selain kamera SHALL dapat discroll secara vertikal pada ponsel dan desktop tanpa overflow horizontal pada viewport ponsel 320–430 px. Statistik, kartu latihan, dan kontrol utama SHALL tetap berada di dalam lebar viewport. Tabel set dapat memiliki scroll horizontal di dalam kontainernya. View kamera SHALL tetap mengisi satu viewport. Tema web SHALL memakai preset cyan SAKA.
 
 #### Scenario: Reach actions below the fold
 - **WHEN** konten workout, routine, atau Explore melebihi tinggi viewport
 - **THEN** pengguna dapat menggeser halaman ke bawah dan mengakses aksi terakhir; menutup kamera memulihkan scroll halaman
+
+#### Scenario: Keep an active workout inside a phone viewport
+- **WHEN** pengguna membuka sesi workout aktif dengan latihan pada viewport 320–430 px
+- **THEN** statistik dan kartu latihan tidak memperlebar halaman; hanya tabel set yang dapat digeser horizontal secara internal

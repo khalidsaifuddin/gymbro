@@ -12,6 +12,9 @@ describe('planned exercises',()=>{
   expect(source[0].targets[0].reps).toBe(10);
   expect(copyPlan(session)).toEqual([{exercise:'dumbbell-curl',targets:[{reps:8,loadKg:12}]}]);
  });
+ it('keeps an exercise card with zero targets after deleting its final set',()=>{
+  expect(validatePlan([{exercise:'push-up',targets:[]}])).toEqual([{exercise:'push-up',targets:[]}]);
+ });
  it('rejects duplicate exercises and malformed kg/reps without accepting an arbitrary id',()=>{
   expect(()=>validatePlan([{exercise:'squat',targets:[{reps:null,loadKg:null}]},{exercise:'squat',targets:[{reps:10,loadKg:null}]}])).toThrow(/duplicate/i);
   expect(()=>validatePlan([{exercise:'unknown',targets:[{reps:10,loadKg:null}]}])).toThrow(/exercise/i);

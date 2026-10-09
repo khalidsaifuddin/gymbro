@@ -3,6 +3,7 @@ import {validateSnapshot} from '../domain/workout-snapshot';
 import {exerciseIds,isSupportedExerciseId,type SupportedExerciseId} from '../domain/exercises';
 import {isCameraView,type CameraView} from '../domain/camera-view';
 import {validatePlan,type PlannedExercise} from '../domain/session-plan';
+import {validateSessionSetRows,type SessionSetRows} from '../domain/session-set-rows';
 
 export type WorkoutPreferences={
  profile:'auto'|ExerciseId;restSeconds:Partial<Record<ExerciseId,number>>;
@@ -10,6 +11,7 @@ export type WorkoutPreferences={
  cameraView?:CameraView;
  cameraViews?:Partial<Record<SupportedExerciseId,CameraView>>;
  exercisePlan?:PlannedExercise[];
+ sessionRows?:SessionSetRows;
 };
 export type LocalWorkout={id:string;revision:number;snapshot:SessionSnapshot;preferences:WorkoutPreferences};
 const exercises:readonly string[]=exerciseIds;
@@ -18,14 +20,16 @@ function validateRecord(value:LocalWorkout):LocalWorkout {
  if(!value||typeof value.id!=='string'||!value.id||!Number.isSafeInteger(value.revision)||value.revision<0||
    Object.keys(value).some(k=>!['id','revision','snapshot','preferences'].includes(k)))return fail();
  const p=value.preferences;
- if(!p||Object.keys(p).some(k=>!['profile','restSeconds','manualExercise','manualReps','manualLoad','cameraView','cameraViews','exercisePlan'].includes(k))||
+ if(!p||Object.keys(p).some(k=>!['profile','restSeconds','manualExercise','manualReps','manualLoad','cameraView','cameraViews','exercisePlan','sessionRows'].includes(k))||
    (p.cameraView!==undefined&&!isCameraView(p.cameraView))||
    (p.cameraViews!==undefined&&(typeof p.cameraViews!=='object'||p.cameraViews===null||Array.isArray(p.cameraViews)||Object.entries(p.cameraViews).some(([id,view])=>!isSupportedExerciseId(id)||!isCameraView(view))))||
    !['auto',...exercises].includes(p.profile)||!exercises.includes(p.manualExercise)||
    typeof p.manualReps!=='string'||typeof p.manualLoad!=='string'||!p.restSeconds||
    Object.entries(p.restSeconds).some(([k,v])=>!exercises.includes(k)||!Number.isSafeInteger(v)||v!<0||v!>3600))return fail();
  if(p.exercisePlan!==undefined)validatePlan(p.exercisePlan);
- return {...structuredClone(value),snapshot:validateSnapshot(value.snapshot)};
+ const snapshot=validateSnapshot(value.snapshot);
+ if(p.sessionRows!==undefined)validateSessionSetRows(p.sessionRows,snapshot.sets);
+ return {...structuredClone(value),snapshot};
 }
 export class WorkoutStore {
  private database:Promise<IDBDatabase>|null=null;

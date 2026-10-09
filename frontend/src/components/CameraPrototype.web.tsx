@@ -1,9 +1,11 @@
 import {useEffect,useRef,useState} from 'react';
 import {type ExerciseId,type WorkoutSet,type WorkoutSummary} from '../domain/workout';
+import {reconcileSessionSetRows,withoutSessionSetRow,type SessionSetRow,type SessionSetRows} from '../domain/session-set-rows';
+import type {SetTarget} from '../domain/session-plan';
 import AccountPanel from './AccountPanel.web';
 import {useAccount} from '../sync/use-account.web';
 import {useLocalWorkout} from '../storage/use-local-workout.web';
-import WorkoutLog,{loadLabel} from './WorkoutLog.web';
+import WorkoutLog from './WorkoutLog.web';
 import type {LocalWorkout} from '../storage/workout-store';
 import {useOfflineCache} from '../storage/use-offline-cache.web';
 import {LocalRecorder,browserRecorderEnvironment} from '../recording/local-recorder';
@@ -19,6 +21,7 @@ import {useRoutines} from '../storage/use-routines.web';
 import type {Routine} from '../storage/routine-store';
 import RoutineEditor from './RoutineEditor.web';
 import ExerciseBrowser from './ExerciseBrowser.web';
+import ExerciseDetails from './ExerciseDetails.web';
 import ExercisePlanCards from './ExercisePlanCards.web';
 import {exerciseCatalog,isSupportedExerciseId,supportedExerciseIds,type SupportedExerciseId} from '../domain/exercises';
 
@@ -44,21 +47,27 @@ export default function CameraPrototype() {
   const releaseClips=()=>{clipUrls.current.forEach(url=>URL.revokeObjectURL(url));clipUrls.current=[];setClips([]);};
   const profile=useRef<Choice>('auto');
   const [choice,setChoice]=useState<Choice>('auto'), [pendingChoice,setPendingChoice]=useState<SupportedExerciseId|null>(null);
-  const [pendingAuto,setPendingAuto]=useState<ExerciseId|null>(null),[exercise,setExercise]=useState<ExerciseId>('squat');
-  const [reps,setReps]=useState('10'),[load,setLoad]=useState(''),[status,setStatus]=useState('Kamera belum aktif');
+  const [pendingAuto,setPendingAuto]=useState<ExerciseId|null>(null),[status,setStatus]=useState('Kamera belum aktif');
   const [running,setRunning]=useState(false),[loading,setLoading]=useState(false),[paused,setPaused]=useState(false);
   const [finished,setFinished]=useState(false),[recognized,setRecognized]=useState<SupportedExerciseId|null>(null);
   const [summary,setSummary]=useState(initial),[sets,setSets]=useState<WorkoutSet[]>([]);
   const [deleteId,setDeleteId]=useState<string|null>(null);
   const [mode,setMode]=useState<'camera'|'log'>('camera');
   const [cameraView,setCameraView]=useState<CameraView>('auto');
-  const [screen,setScreen]=useState<'home'|'editor'|'explore'|'picker'|'session'|'camera'|'summary'>('home');
+  const [cameraControlsOpen,setCameraControlsOpen]=useState(false);
+  const cameraAutoStarted=useRef(false);
+  const [screen,setScreen]=useState<'home'|'editor'|'explore'|'picker'|'session'|'camera'|'summary'|'exercise-detail'>('home');
+  const [detailExercise,setDetailExercise]=useState<ExerciseId|null>(null),[detailReturnScreen,setDetailReturnScreen]=useState<'home'|'editor'|'session'>('session');
   const [pickerFor,setPickerFor]=useState<'routine'|'session'>('session');
   const [draft,setDraft]=useState<Routine|null>(null),[routineError,setRoutineError]=useState('');
   const [routineBusy,setRoutineBusy]=useState(false),[deleteRoutineId,setDeleteRoutineId]=useState<string|null>(null);
   const [cameraExercise,setCameraExercise]=useState<SupportedExerciseId>('squat');
   const viewFor=(id:SupportedExerciseId)=>local.preferences.current.cameraViews?.[id]??local.preferences.current.cameraView??'auto';
   const refresh=(checkpoint=false) => {
+    if(workout.current){
+      const prefs=local.preferences.current,next=reconcileSessionSetRows(prefs.sessionRows,prefs.exercisePlan??[],workout.current.getSets(),()=>crypto.randomUUID());
+      if(JSON.stringify(next)!==JSON.stringify(prefs.sessionRows))prefs.sessionRows=next;
+    }
     local.refresh(checkpoint);
     if (!workout.current) {setSummary(initial);setSets([]);return;}
     setSummary(workout.current.summary());setSets(workout.current.getSets());
@@ -109,7 +118,7 @@ export default function CameraPrototype() {
       for (const track of acquired.getVideoTracks()) track.addEventListener('ended',()=>{
         if (epoch.current!==token) return;
         workout.current?.observe({exercise:null,visible:false,phase:'moving'});
-        stopResources();setRunning(false);setLoading(false);setStatus('Kamera terputus. Aktifkan kembali atau catat set manual.');refresh();
+        stopResources();setRunning(false);setLoading(false);setStatus('Kamera terputus. Aktifkan kembali untuk melanjutkan.');refresh();
       });
       await worker.initialize();
       if (epoch.current!==token) return;
@@ -134,17 +143,17 @@ export default function CameraPrototype() {
               setOverlayFrame(pose);
               const result=recognizer.current.process(pose);
               workout.current!.observe({...result.observation,labelSource:profile.current==='auto'?'automatic':'profile'});setRecognized(isSupportedExerciseId(result.observation.exercise)?result.observation.exercise:null);
-              setStatus(result.reason==='camera-position'?'Pastikan sendi terlihat dari posisi kamera semula, atau catat set manual.'
+              setStatus(result.reason==='camera-position'?'Pastikan sendi terlihat dari posisi kamera semula.'
                 :result.reason==='visible-side-changed'?'Sisi tubuh yang terlihat berubah. Siklus terputus dibuang; pertahankan posisi kamera semula.'
-                :result.reason==='curl-not-bilateral'?'Gerakkan kedua lengan serempak atau catat set manual.'
-                :result.reason==='exercise-unknown'||result.reason==='exercise-ambiguous'?'Gerakan belum dikenali. Pilih profil latihan atau catat set manual.'
+                :result.reason==='curl-not-bilateral'?'Gerakkan kedua lengan serempak.'
+                :result.reason==='exercise-unknown'||result.reason==='exercise-ambiguous'?'Gerakan belum dikenali. Pilih profil latihan.'
                 :result.reason?'Tracking terputus. Pastikan tubuh dan sendi terlihat.':'Tracking aktif');
               refresh();
             }
           } catch {
             if (epoch.current!==token) return;
             workout.current!.observe({exercise:null,visible:false,phase:'moving'});
-            stopResources();setRunning(false);setStatus('Deteksi berhenti. Aktifkan kamera kembali atau catat set manual.');refresh();return;
+            stopResources();setRunning(false);setStatus('Deteksi berhenti. Aktifkan kamera kembali untuk melanjutkan.');refresh();return;
           }
         }
         animation.current=requestAnimationFrame(frame);
@@ -154,8 +163,8 @@ export default function CameraPrototype() {
       if (epoch.current!==token) return;
       stopResources();setLoading(false);setRunning(false);
       setStatus(error instanceof DOMException&&error.name==='NotAllowedError'
-        ?'Izin kamera ditolak. Aktifkan izin browser atau catat set manual.'
-        :'Kamera/model tidak tersedia. Gunakan HTTPS, periksa kamera, atau catat set manual.');
+        ?'Izin kamera ditolak. Aktifkan izin browser untuk menggunakan deteksi.'
+        :'Kamera/model tidak tersedia. Gunakan HTTPS dan periksa kamera.');
     }
   };
   const applyChoice=(next:Choice) => {
@@ -167,10 +176,6 @@ export default function CameraPrototype() {
     const current=workout.current?.getSets().at(-1);
     if (current&&current.endedAt===null&&next!=='auto'&&next!==current.exercise) setPendingChoice(next);
     else {if(next!=='auto'&&next!==cameraExercise){stopResources();setRunning(false);setLoading(false);setCameraView(viewFor(next));setStatus('Profil berubah. Aktifkan kamera kembali.');}applyChoice(next);if(next!=='auto')setCameraExercise(next);}
-  };
-  const logManual=() => {
-    try {getWorkout().addManualSet(exercise,Number(reps),load.trim()===''?null:Number(load));refresh();setStatus('Set manual dicatat');}
-    catch {setStatus('Masukkan reps bulat positif dan beban kg yang valid.');}
   };
   const finish=() => {
     stopResources();getWorkout().finish();setRunning(false);setLoading(false);setFinished(true);setPendingChoice(null);setStatus('Workout selesai');refresh();
@@ -184,21 +189,20 @@ export default function CameraPrototype() {
     stopResources();local.open(record);
     const p=local.preferences.current;profile.current=p.profile==='auto'||isSupportedExerciseId(p.profile)?p.profile:'auto';setChoice(profile.current);
     setCameraView(viewFor(cameraExercise));
-    setExercise(p.manualExercise);setReps(p.manualReps);setLoad(p.manualLoad);
     setFinished(workout.current!.isFinished());setPaused(!workout.current!.isFinished());setRunning(false);
-    setStatus(workout.current!.isFinished()?'Workout selesai':'Sesi dipulihkan dalam keadaan jeda. Aktifkan kamera kembali atau lanjutkan manual.');refresh();
+    setStatus(workout.current!.isFinished()?'Workout selesai':'Sesi dipulihkan dalam keadaan jeda. Aktifkan kamera kembali untuk melanjutkan.');refresh();
     setScreen(workout.current!.isFinished()?'summary':'session');
   };
   const controlsDisabled=!account.ready||!local.ready||!!local.recovery;
   const active=sets.find(set=>set.endedAt===null),last=sets.at(-1);
-  const restTarget=local.preferences.current.restSeconds[last?.exercise??exercise]??120;
+  const restTarget=local.preferences.current.restSeconds[last?.exercise??cameraExercise]??120;
   const rest=Math.floor((workout.current?.restElapsedMs()??0)/1000);
   const guidance=cameraGuidance(choice==='auto'?null:choice,cameraView,!!workout.current);
-  const resetWorkout=()=>{stopResources();recorder.current=null;recordOptIn.current=false;setRecordEnabled(false);setRecordNotice('');local.newWorkout();setCameraView('auto');setFinished(false);setPaused(false);setRecognized(null);setPendingChoice(null);setPendingAuto(null);profile.current='auto';setChoice('auto');setExercise('squat');setReps('10');setLoad('');setStatus('Kamera belum aktif');setScreen('home');refresh();};
+  const resetWorkout=()=>{stopResources();recorder.current=null;recordOptIn.current=false;setRecordEnabled(false);setRecordNotice('');local.newWorkout();setCameraView('auto');setFinished(false);setPaused(false);setRecognized(null);setPendingChoice(null);setPendingAuto(null);profile.current='auto';setChoice('auto');setStatus('Kamera belum aktif');setScreen('home');refresh();};
   const plan=local.preferences.current.exercisePlan??[];
   const updatePlan=(next:PlannedExercise[])=>{local.preferences.current.exercisePlan=copyPlan(next);refresh();};
   const beginWorkout=(next:PlannedExercise[])=>{
-    local.preferences.current.exercisePlan=copyPlan(next);getWorkout();setFinished(false);setPaused(false);setRecognized(null);
+    local.newWorkout();local.preferences.current.exercisePlan=copyPlan(next);local.preferences.current.sessionRows={};getWorkout();setFinished(false);setPaused(false);setRecognized(null);
     setPendingChoice(null);setPendingAuto(null);setMode('camera');setScreen('session');refresh();
   };
   const editRoutine=(routine?:Routine)=>{
@@ -218,68 +222,116 @@ export default function CameraPrototype() {
       setScreen('editor');return;
     }
     if(!plan.some(row=>row.exercise===id))updatePlan([...plan,{exercise:id,targets:emptyTargets()}]);
-    setExercise(id);setScreen('session');
+    setScreen('session');
   };
-  const completePlannedSet=(id:ExerciseId,index:number)=>{
-    const target=plan.find(row=>row.exercise===id)?.targets[index];
-    if(!target?.reps){setStatus('Enter a positive rep target before completing a set.');return;}
-    try{getWorkout().addManualSet(id,target.reps,target.loadKg);setStatus('Set manual dicatat');refresh();}
-    catch{setStatus('Set could not be completed. Check reps and kg.');}
+  const openExerciseDetails=(id:ExerciseId)=>{setDetailExercise(id);setDetailReturnScreen(screen==='editor'||screen==='session'?screen:'home');setScreen('exercise-detail');};
+  const updateSessionTarget=(id:ExerciseId,row:SessionSetRow,target:SetTarget)=>{
+    const prefs=local.preferences.current,rows=structuredClone(prefs.sessionRows??{});
+    rows[id]=(rows[id]??[]).map(item=>item.id===row.id?{...item,target}:item);prefs.sessionRows=rows;refresh();
+  };
+  const toggleSessionSet=(id:ExerciseId,row:SessionSetRow,checked:boolean)=>{
+    if(checked){
+      try{
+        let resultId:string;
+        if(row.savedResult){resultId=row.savedResult.id;getWorkout().restoreCompletedSet(row.savedResult,{reps:row.target.reps??row.savedResult.reps,loadKg:row.target.loadKg});}
+        else {if(!row.target.reps){setStatus('Enter a positive rep target before completing a set.');return;}resultId=getWorkout().addManualSet(id,row.target.reps,row.target.loadKg);}
+        const rows=structuredClone(local.preferences.current.sessionRows??{});rows[id]=(rows[id]??[]).map(item=>{if(item.id!==row.id)return item;const next={...item,resultSetId:resultId,target:row.target};delete next.savedResult;return next;});local.preferences.current.sessionRows=rows;
+        setStatus('Set saved');refresh();
+      }catch{setStatus('Set could not be completed. Check reps and kg.');}
+      return;
+    }
+    if(!row.resultSetId)return;
+    try{
+      const removed=getWorkout().removeCompletedSet(row.resultSetId),rows=structuredClone(local.preferences.current.sessionRows??{});
+      rows[id]=(rows[id]??[]).map(item=>item.id===row.id?{...item,target:{reps:removed.reps,loadKg:removed.loadKg},savedResult:removed,resultSetId:undefined}:item);
+      rows[id]=rows[id]!.map(item=>{if(item.id===row.id)delete item.resultSetId;return item;});local.preferences.current.sessionRows=rows;setStatus('Set unchecked; values are kept for restore.');refresh();
+    }catch{setStatus('End the live set before unchecking it.');}
+  };
+  const editSessionSet=(id:ExerciseId,row:SessionSetRow,reps:number,loadKg:number|null)=>{
+    const current=getWorkout().getSets().find(set=>set.id===row.resultSetId);if(!current||current.endedAt===null){setStatus('End the live set before editing it.');return;}
+    try{getWorkout().correctSet(current.id,reps);getWorkout().setLoad(current.id,loadKg);setStatus('Set updated');refresh();}catch{setStatus('Set values were not changed. Check reps and kg.');}
+  };
+  const deleteSessionSet=(id:ExerciseId,row:SessionSetRow)=>{
+    try{
+      if(row.resultSetId)getWorkout().removeCompletedSet(row.resultSetId);
+      const prefs=local.preferences.current,index=(prefs.sessionRows?.[id]??[]).findIndex(item=>item.id===row.id),rows=withoutSessionSetRow(prefs.sessionRows??{},id,row.id);prefs.sessionRows=rows;
+      const plan=prefs.exercisePlan??[];
+      prefs.exercisePlan=copyPlan(plan.map(item=>item.exercise===id&&index<item.targets.length?{...item,targets:item.targets.filter((_,i)=>i!==index)}:item));
+      setStatus('Set deleted');refresh();
+    }catch{setStatus('The live set cannot be deleted. End it first.');}
   };
   const openCamera=(id:SupportedExerciseId)=>{
     const current=sets.find(set=>set.endedAt===null);
     if(current&&current.exercise!==id){setPendingChoice(id);return;}
-    applyChoice(id);setCameraExercise(id);setCameraView(viewFor(id));setScreen('camera');
+    applyChoice(id);setCameraExercise(id);setCameraView(viewFor(id));setCameraControlsOpen(false);setScreen('camera');
   };
-  const openAutoCamera=()=>{const first=plan.find(row=>isSupportedExerciseId(row.exercise))?.exercise;if(!isSupportedExerciseId(first))return;applyChoice('auto');setCameraExercise(first);setCameraView(viewFor(first));setScreen('camera');};
+  const openAutoCamera=()=>{const first=plan.find(row=>isSupportedExerciseId(row.exercise))?.exercise;if(!isSupportedExerciseId(first))return;applyChoice('auto');setCameraExercise(first);setCameraView(viewFor(first));setCameraControlsOpen(false);setScreen('camera');};
   const closeCamera=()=>{stopResources();setRunning(false);setLoading(false);setStatus('Kamera berhenti. Hasil set tetap tersimpan.');setScreen('session');refresh();};
+  const endSetAndReturn=()=>{
+    if(controlsDisabled||finished||loading)return;
+    stopResources();workout.current?.endSet();setRunning(false);setLoading(false);setStatus('Set diakhiri. Kembali ke workout session.');refresh();setScreen('session');
+  };
   useEffect(()=>{
     if(screen!=='camera')return;
     const before=document.body.style.overflow;document.body.style.overflow='hidden';
     const key=(event:KeyboardEvent)=>{if(event.key==='Escape')closeCamera();};document.addEventListener('keydown',key);
     return ()=>{document.body.style.overflow=before;document.removeEventListener('keydown',key);};
   },[screen]);
+  useEffect(()=>{
+    if(screen!=='camera'){
+      cameraAutoStarted.current=false;
+      setCameraControlsOpen(false);
+      return;
+    }
+    if(cameraAutoStarted.current)return;
+    cameraAutoStarted.current=true;
+    void start();
+  },[screen]);
   const cameraSet=sets.find(set=>set.endedAt===null&&(choice==='auto'||set.exercise===cameraExercise));
   const cameraSetNumber=sets.filter(set=>set.exercise===(cameraSet?.exercise??cameraExercise)&&set.endedAt!==null).length+1;
   if(screen==='camera')return <div className="gymbro-camera" data-testid="full-screen-camera" role="dialog" aria-label={`Camera ${choice==='auto'?'automatic detection':exerciseLabels[cameraExercise]}`}>
-    <header className="gymbro-camera-head">
-      <button className="saka-btn saka-btn--sm" onClick={closeCamera}>Back to workout</button>
-      <div><div className="saka-kicker">Live detection</div><strong>{choice==='auto'?'Automatic detection':exerciseLabels[cameraExercise]}</strong></div>
-      <span className="gymbro-live-pill">{running?'● LIVE':loading?'LOADING':'READY'}</span>
-    </header>
     <div className="gymbro-camera-stage">
       <video ref={video} autoPlay muted playsInline aria-label="Kamera workout" onLoadedMetadata={()=>{
         if(video.current?.videoWidth&&video.current.videoHeight)setVideoAspectRatio(video.current.videoWidth/video.current.videoHeight);
       }}/>
-      <CameraFramingOverlay frame={running?overlayFrame:null} exercise={choice==='auto'?null:cameraExercise} cameraView={cameraView} videoAspectRatio={videoAspectRatio}/>
+      <CameraFramingOverlay frame={running?overlayFrame:null} exercise={choice==='auto'?null:cameraExercise} cameraView={cameraView} videoAspectRatio={videoAspectRatio} status={status}/>
       <div className="gymbro-camera-readout"><div><span className="saka-kicker">Set {cameraSetNumber}</span><strong data-testid="live-rep-counter">{cameraSet?.reps??0}</strong><span>REPS</span></div></div>
       <div className="gymbro-camera-recognized">{recognized?`Detected: ${exerciseLabels[recognized]}`:'Gerakan: Belum dikenali'}</div>
-    </div>
-    <footer className="gymbro-camera-foot">
-      <div className="gymbro-camera-status" aria-live="polite">{status}</div>
-      {!!recordNotice&&<div className="gymbro-camera-status">{recordNotice}</div>}
       <div className="gymbro-camera-mini"><span>Total reps: {summary.totalReps}</span><span>Completed sets: {summary.totalSets}</span></div>
+    </div>
+    <header className="gymbro-camera-head"><div><span className="saka-kicker">{choice==='auto'?'Automatic detection':exerciseLabels[cameraExercise]}</span>
+      <span className="gymbro-live-pill">{running?'● LIVE':loading?'LOADING':'READY'}</span></div>
+      <button className="gymbro-camera-menu-toggle" aria-label={cameraControlsOpen?'Close camera controls':'Open camera controls'} aria-expanded={cameraControlsOpen} aria-controls="gymbro-camera-controls-panel" onClick={()=>setCameraControlsOpen(open=>!open)}>
+        <span aria-hidden="true">{cameraControlsOpen?'×':'☰'}</span>
+      </button></header>
+    {cameraControlsOpen&&<aside id="gymbro-camera-controls-panel" className="gymbro-camera-panel" aria-label="Camera controls">
+      <button className="gymbro-camera-icon-button" aria-label="Back to workout" title="Back to workout" onClick={closeCamera}><span aria-hidden="true">←</span></button>
       <label className="gymbro-profile-control">Profil kamera <select className="saka-select" aria-label="Profil kamera" value={choice} disabled={finished} onChange={event=>choose(event.target.value as Choice)}>
         <option value="auto">Otomatis</option>{Object.entries(exerciseLabels).map(([id,label])=><option key={id} value={id}>{label}</option>)}
       </select></label>
       <div className="gymbro-camera-controls">
-        <button className="saka-btn is-filled" onClick={()=>void start()} disabled={controlsDisabled||running||loading||finished}>{paused?'Lanjutkan kamera':'Aktifkan kamera'}</button>
-        {running&&<button className="saka-btn" onClick={pause}>Jeda kamera</button>}
-        <button className="saka-btn" onClick={()=>{workout.current?.endSet();refresh();}} disabled={controlsDisabled||finished}>Akhiri set</button>
-        <button className="saka-btn" onClick={finish} disabled={controlsDisabled||finished}>Selesaikan workout</button>
+        {!running&&<button className="gymbro-camera-icon-button is-filled" aria-label={paused?'Lanjutkan kamera':'Aktifkan kamera'} title={paused?'Resume camera':'Start camera'} onClick={()=>void start()} disabled={controlsDisabled||loading||finished}><span aria-hidden="true">▶</span></button>}
+        {running&&<button className="gymbro-camera-icon-button" aria-label="Jeda kamera" title="Pause camera" onClick={pause}><span aria-hidden="true">Ⅱ</span></button>}
+        <button className="gymbro-camera-icon-button" aria-label="Akhiri set" title="End set" onClick={()=>{workout.current?.endSet();refresh();}} disabled={controlsDisabled||finished}><span aria-hidden="true">■</span></button>
+        <button className="gymbro-camera-icon-button" aria-label="Akhiri set & kembali ke workout session" title="End set and return to workout" onClick={endSetAndReturn} disabled={controlsDisabled||finished||loading}><span aria-hidden="true">↩</span></button>
+        <button className="gymbro-camera-icon-button" aria-label="Selesaikan workout" title="Finish workout" onClick={finish} disabled={controlsDisabled||finished}><span aria-hidden="true">✓</span></button>
       </div>
+      {!!recordNotice&&<div className="gymbro-camera-status">{recordNotice}</div>}
       {(pendingChoice||pendingAuto)&&<div className="saka-alert is-warning"><span>Konfirmasi pergantian latihan; set aktif akan diakhiri.</span>
-        <button className="saka-btn saka-btn--sm" onClick={()=>{
+        <button className="gymbro-camera-icon-button" aria-label="Konfirmasi pergantian" title="Confirm exercise change" onClick={()=>{
           if(pendingChoice){workout.current?.endSet();stopResources();setRunning(false);setLoading(false);setCameraView(viewFor(pendingChoice));applyChoice(pendingChoice);setCameraExercise(pendingChoice);}
           else{workout.current?.confirmExerciseChange();refresh();}
-        }}>Konfirmasi pergantian</button></div>}
+        }}><span aria-hidden="true">✓</span></button></div>}
       <details className="gymbro-camera-guide"><summary>Camera placement guide</summary><p data-testid="camera-guide">{guidance}</p></details>
-    </footer>
+    </aside>}
   </div>;
+
+  if(screen==='exercise-detail'&&detailExercise)return <main className="gymbro-shell"><header className="gymbro-topbar"><span className="gymbro-brand">GYMBRO<span>_</span></span><span className="saka-kicker">Exercise library</span></header>
+    <ExerciseDetails exercise={detailExercise} onBack={()=>setScreen(detailReturnScreen)}/></main>;
 
   if(screen==='editor'&&draft)return <main className="gymbro-shell"><header className="gymbro-topbar"><span className="gymbro-brand">GYMBRO<span>_</span></span><span className="saka-kicker">Routine planning</span></header>
     <RoutineEditor draft={draft} onChange={setDraft} onError={setRoutineError} onAdd={()=>{setPickerFor('routine');setScreen('picker');}}
-      onSave={()=>void saveRoutine()} onCancel={()=>{setDraft(null);setScreen('home');}} error={routineError} busy={routineBusy}/></main>;
+      onSave={()=>void saveRoutine()} onCancel={()=>{setDraft(null);setScreen('home');}} onDetails={openExerciseDetails} error={routineError} busy={routineBusy}/></main>;
   if(screen==='explore'||screen==='picker')return <main className="gymbro-shell"><header className="gymbro-topbar"><span className="gymbro-brand">GYMBRO<span>_</span></span><span className="saka-kicker">Exercise library</span></header>
     <ExerciseBrowser onBack={()=>setScreen(screen==='explore'?'home':pickerFor==='routine'?'editor':'session')}
       onSelect={screen==='picker'?chooseFromPicker:undefined} excluded={screen==='picker'?(pickerFor==='routine'?draft?.exercises:plan)?.map(row=>row.exercise):[]}/></main>;
@@ -299,7 +351,7 @@ export default function CameraPrototype() {
       {routineError&&<div className="saka-alert is-warning" role="alert">{routineError}</div>}
       {routines.routines.length?<div className="gymbro-routine-grid">{routines.routines.map(routine=><article className="saka-card gymbro-routine-card" key={routine.id}>
         <div className="saka-split"><div><div className="saka-kicker">{routine.exercises.length} exercises</div><h3>{routine.name}</h3></div><span className="gymbro-card-index">▣</span></div>
-        <p className="saka-prose">{routine.exercises.map(row=>exerciseCatalog[row.exercise].label).join(' · ')}</p>
+        <div className="gymbro-routine-exercises">{routine.exercises.map(row=><button className="gymbro-detail-link" key={row.exercise} onClick={()=>{setDetailReturnScreen('home');setDetailExercise(row.exercise);setScreen('exercise-detail');}}>{exerciseCatalog[row.exercise].label}</button>)}</div>
         <button className="saka-btn is-filled saka-btn--block" aria-label={`Start ${routine.name}`} onClick={()=>beginWorkout(routine.exercises)} disabled={controlsDisabled}>Start Routine</button>
         <div className="saka-cluster"><button className="saka-btn saka-btn--sm" aria-label={`Edit ${routine.name}`} onClick={()=>editRoutine(routine)}>Edit</button>
           <button className="saka-btn saka-btn--sm" aria-label={`Delete ${routine.name}`} onClick={()=>setDeleteRoutineId(routine.id)}>Delete</button></div>
@@ -318,8 +370,8 @@ export default function CameraPrototype() {
       <div className="saka-split"><span>{new Date(record.snapshot.startedAt).toLocaleString('id-ID')} · {record.snapshot.sets.reduce((sum,set)=>sum+set.reps,0)} reps</span>
         <div className="saka-cluster"><Button label="Lihat workout" onPress={()=>openRecord(record)}/><Button label="Hapus workout" onPress={()=>setDeleteId(record.id)}/></div></div>
       {deleteId===record.id&&<div className="saka-alert is-danger"><span>Hapus workout ini dari perangkat dan akun terkait?</span>
-        <div className="saka-cluster"><Button label="Konfirmasi hapus workout" onPress={()=>{void local.flush().then(async()=>{const binding=(await account.store.bindings()).find(item=>item.workoutId===record.id);if(binding){await account.store.deleteWorkout(record,binding.ownerId);await account.flush();}else await account.store.remove(record.id,record.revision);setDeleteId(null);await local.reloadHistory();}).catch(()=>setStatus('Penghapusan gagal; hasil tetap tersimpan'));}}/>
-          <Button label="Batal hapus workout" onPress={()=>setDeleteId(null)}/></div></div>}
+        <div className="saka-cluster"><Button label="Hapus" onPress={()=>{void local.flush().then(async()=>{const binding=(await account.store.bindings()).find(item=>item.workoutId===record.id);if(binding){await account.store.deleteWorkout(record,binding.ownerId);await account.flush();}else await account.store.remove(record.id,record.revision);setDeleteId(null);await local.reloadHistory();}).catch(()=>setStatus('Penghapusan gagal; hasil tetap tersimpan'));}}/>
+          <Button label="Batal" onPress={()=>setDeleteId(null)}/></div></div>}
     </div>)}</section>}
     <footer className="gymbro-page-foot"><span>{local.saveStatus}</span><span>{offlineStatus}</span><span>Routines stay in this browser.</span></footer>
   </main>;
@@ -341,7 +393,8 @@ export default function CameraPrototype() {
       {screen==='session'&&<>
         {!plan.length&&!sets.length&&<div className="saka-card gymbro-empty"><span className="gymbro-empty-symbol">＋</span><strong>No exercises yet</strong>
           <p className="saka-prose">Add an exercise to start your workout.</p></div>}
-        <ExercisePlanCards plan={plan} mode="session" sets={sets} history={local.history} onChange={updatePlan} onComplete={completePlannedSet}
+        <ExercisePlanCards plan={plan} mode="session" sets={sets} history={local.history} sessionRows={local.preferences.current.sessionRows} onChange={updatePlan} onDetails={openExerciseDetails}
+          onTargetChange={updateSessionTarget} onToggleSet={toggleSessionSet} onEditSet={editSessionSet} onDeleteSet={deleteSessionSet}
           onCamera={openCamera} onError={setStatus} cameraViews={Object.fromEntries(supportedExerciseIds.map(id=>[id,viewFor(id)]))}
           onCameraViewChange={(id,view)=>{if(!isCameraView(view))return;local.preferences.current.cameraViews={...local.preferences.current.cameraViews,[id]:view};if(cameraExercise===id)setCameraView(view);refresh();}}
           restSeconds={local.preferences.current.restSeconds}
@@ -351,15 +404,7 @@ export default function CameraPrototype() {
         <div className="saka-cluster gymbro-mode-tabs"><button className={`saka-btn ${mode==='camera'?'is-filled':''}`} onClick={()=>setMode('camera')}>Mode kamera</button>
           <button className={`saka-btn ${mode==='log'?'is-filled':''}`} onClick={()=>setMode('log')}>Mode log</button></div>
         {mode==='log'&&<WorkoutLog session={workout.current} sets={sets} history={local.history} preferences={local.preferences.current} refresh={refresh} onError={setStatus}/>}
-        <div className="saka-card gymbro-manual"><div className="saka-kicker">Fallback entry</div><h2 className="gymbro-section-title">Catat set manual</h2>
-          <div className="gymbro-manual-grid"><label className="saka-field"><span className="saka-label">Latihan</span><select className="saka-select" aria-label="Latihan untuk set manual" value={exercise} onChange={event=>{
-            const next=event.target.value as ExerciseId;setExercise(next);local.preferences.current.manualExercise=next;refresh();}}>
-            {[...new Set([...supportedExerciseIds,...plan.map(row=>row.exercise),exercise])].map(id=><option key={id} value={id}>{exerciseCatalog[id].label}</option>)}</select></label>
-            <label className="saka-field"><span className="saka-label">Reps manual</span><input className="saka-input" aria-label="Reps manual" type="number" value={reps} onChange={event=>{setReps(event.target.value);local.preferences.current.manualReps=event.target.value;refresh();}}/></label>
-            <label className="saka-field"><span className="saka-label">Beban kg</span><input className="saka-input" aria-label="Beban kg" type="number" step="0.001" placeholder="Belum diisi" value={load} onChange={event=>{setLoad(event.target.value);local.preferences.current.manualLoad=event.target.value;refresh();}}/></label></div>
-          <p className="saka-prose">{loadLabel(exercise)}</p><button className="saka-btn" onClick={logManual} disabled={controlsDisabled||finished||paused}>Catat set manual</button>
-        </div>
-        {paused&&<button className="saka-btn" onClick={()=>{getWorkout().resume();setPaused(false);setStatus('Workout manual dilanjutkan');refresh();}}>Lanjutkan workout manual</button>}
+        {paused&&<button className="saka-btn" onClick={()=>{getWorkout().resume();setPaused(false);setStatus('Workout dilanjutkan');refresh();}}>Lanjutkan workout</button>}
         {!paused&&<button className="saka-btn" onClick={pause}>Jeda workout</button>}
         {(pendingChoice||pendingAuto)&&<div className="saka-alert is-warning"><span>Konfirmasi pergantian latihan; set aktif akan diakhiri.</span>
           <button className="saka-btn saka-btn--sm" onClick={()=>{if(pendingChoice){workout.current?.endSet();const next=pendingChoice;applyChoice(next);setCameraExercise(next);setCameraView(viewFor(next));setScreen('camera');}else{workout.current?.confirmExerciseChange();refresh();}}}>Konfirmasi pergantian</button></div>}

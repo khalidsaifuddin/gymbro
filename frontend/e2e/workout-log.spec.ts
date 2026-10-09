@@ -1,11 +1,10 @@
 import {test,expect,type Page} from '@playwright/test';
-import {startEmptyWorkout} from './fixtures/workout-ui';
+import type {ExerciseId} from '../src/domain/exercises';
+import {logPlannedSet,startEmptyWorkout} from './fixtures/workout-ui';
 
 const url='http://127.0.0.1:8081/';
 async function manual(page:Page,exercise='bench-press',reps='10',load='40') {
- await page.getByLabel('Latihan untuk set manual').selectOption(exercise);
- await page.getByLabel('Reps manual').fill(reps);await page.getByLabel('Beban kg',{exact:true}).fill(load);
- await page.getByRole('button',{name:'Catat set manual',exact:true}).click();
+ await logPlannedSet(page,exercise as ExerciseId,reps,load);
  await expect(page.getByText('Tersimpan di perangkat',{exact:true})).toBeVisible();
 }
 test('log table, weight edits, correction, merge and summary share the same session',async({page})=>{
@@ -53,9 +52,9 @@ test('incrementally saved unfinished workout offers recovery without reactivatin
  await expect(page.getByText('Sesi belum selesai ditemukan',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Pulihkan sesi',exact:true}).click();
  await expect(page.getByText('Total reps: 8',{exact:true})).toBeVisible();
- await expect(page.getByText('Sesi dipulihkan dalam keadaan jeda. Aktifkan kamera kembali atau lanjutkan manual.',{exact:true})).toBeVisible();
+ await expect(page.getByText('Sesi dipulihkan dalam keadaan jeda. Aktifkan kamera kembali untuk melanjutkan.',{exact:true})).toBeVisible();
   await expect(page.locator('video')).toHaveCount(0);
- await page.getByRole('button',{name:'Lanjutkan workout manual',exact:true}).click();
+ await page.getByRole('button',{name:'Lanjutkan workout',exact:true}).click();
  await manual(page,'bench-press','5','40');
  await expect(page.getByText('Total reps: 13',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Selesaikan workout',exact:true}).click();
@@ -67,8 +66,8 @@ test('incrementally saved unfinished workout offers recovery without reactivatin
 test('two tabs cannot silently overwrite the same stored workout',async({page,context})=>{
  await page.goto(url);await startEmptyWorkout(page);await manual(page);const other=await context.newPage();await other.goto(url);
  await other.getByRole('button',{name:'Pulihkan sesi',exact:true}).click();
- await other.getByRole('button',{name:'Lanjutkan workout manual',exact:true}).click();await manual(other,'bench-press','5','40');
- await page.getByLabel('Reps manual').fill('7');await page.getByRole('button',{name:'Catat set manual',exact:true}).click();
+ await other.getByRole('button',{name:'Lanjutkan workout',exact:true}).click();await manual(other,'bench-press','5','40');
+ await manual(page,'bench-press','7','40');
  await expect(page.getByText('Konflik lokal: sesi telah diubah di tab lain. Hasil tab ini belum tersimpan.',{exact:true})).toBeVisible();
  await page.reload();await page.getByRole('button',{name:'Pulihkan sesi',exact:true}).click();
  await expect(page.getByText('Total reps: 15',{exact:true})).toBeVisible();
@@ -77,7 +76,7 @@ test('storage unavailable is explicit, manual results remain exportable',async({
  await page.addInitScript(()=>{Object.defineProperty(window,'indexedDB',{value:undefined});});await page.goto(url);
  await startEmptyWorkout(page);
  await expect(page.getByText('Penyimpanan lokal tidak tersedia. Hasil hanya ada di memori; ekspor sebelum menutup halaman.',{exact:true})).toBeVisible();
- await page.getByRole('button',{name:'Catat set manual',exact:true}).click();
+ await manual(page,'squat','10','');
  await expect(page.getByText('Total reps: 10',{exact:true})).toBeVisible();
  const download=page.waitForEvent('download');await page.getByRole('button',{name:'Ekspor hasil JSON',exact:true}).click();
  expect((await download).suggestedFilename()).toBe('gymbro-workout.json');

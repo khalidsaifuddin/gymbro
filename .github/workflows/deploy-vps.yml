@@ -1,0 +1,93 @@
+name: Build and deploy Gymbro
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gymbro-vps-production
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: gymbro_test
+          POSTGRES_DB: gymbro_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U gymbro_test -d gymbro_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: '1.27.1'
+          cache-dependency-path: backend/go.sum
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24.21.0'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Frontend install and tests
+        working-directory: frontend
+        env:
+          EXPO_PUBLIC_GYMBRO_API_URL: https://gymbro-backend.spmbbanjarkab.web.id
+        run: |
+          npm ci
+          npm test
+          npm run typecheck
+          npm run test:serve
+          npm run build:web
+
+      - name: Backend tests and build
+        working-directory: backend
+        env:
+          GYMBRO_TEST_DATABASE_URL: postgres://gymbro_test@127.0.0.1:5432/gymbro_test?sslmode=disable
+        run: |
+          go test ./...
+          go test -race -tags=integration ./...
+          mkdir -p ../release/backend
+          go build -o ../release/backend/gymbro-api .
+
+      - name: Assemble release
+        run: |
+          mkdir -p release/frontend/scripts release/deploy
+          cp -R frontend/dist release/frontend/dist
+          cp frontend/scripts/serve-dist.mjs frontend/scripts/start-dist.mjs release/frontend/scripts/
+          cp deploy/ecosystem.config.cjs deploy/deploy-release.sh release/deploy/
+          chmod +x release/deploy/deploy-release.sh
+
+      - name: Upload and activate release on VPS
+        env:
+          DEPLOY_KEY: ${{ secrets.GYMBRO_DEPLOY_KEY }}
+          DEPLOY_HOST: 103.127.132.229
+          DEPLOY_USER: spmb-sandbox
+          DEPLOY_KNOWN_HOSTS: 103.127.132.229 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICI71OjalGnff4Qj/QeEdoWMR9w1iJ6Dfs11j2bsJCS9
+          RELEASE_ID: ${{ github.sha }}
+        run: |
+          test -n "$DEPLOY_KEY"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/gymbro_deploy
+          trap 'rm -f ~/.ssh/gymbro_deploy' EXIT
+          chmod 600 ~/.ssh/gymbro_deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          release="/home/$DEPLOY_USER/apps/gymbro/releases/$RELEASE_ID"
+          ssh -i ~/.ssh/gymbro_deploy "$DEPLOY_USER@$DEPLOY_HOST" "mkdir -p '$release'"
+          rsync -az --delete -e "ssh -i ~/.ssh/gymbro_deploy" release/ "$DEPLOY_USER@$DEPLOY_HOST:$release/"
+          ssh -i ~/.ssh/gymbro_deploy "$DEPLOY_USER@$DEPLOY_HOST" "bash '$release/deploy/deploy-release.sh' '$RELEASE_ID'"

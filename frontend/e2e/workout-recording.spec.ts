@@ -1,11 +1,11 @@
 import {test,expect} from '@playwright/test';
-import {openAutomaticCamera,startEmptyWorkout} from './fixtures/workout-ui';
+import {logPlannedSet,openAutomaticCamera,openCameraControls,startEmptyWorkout} from './fixtures/workout-ui';
 test('default camera session never constructs a MediaRecorder',async({page})=>{
  await page.addInitScript(()=>{
   const original=MediaRecorder;(window as any).recorderCreations=0;
   Object.defineProperty(window,'MediaRecorder',{value:new Proxy(original,{construct(target,args){(window as any).recorderCreations++;return Reflect.construct(target,args);}})});
  });
- await page.goto('http://127.0.0.1:8081/');await startEmptyWorkout(page);await openAutomaticCamera(page);await page.getByRole('button',{name:'Aktifkan kamera',exact:true}).click();
+ await page.goto('http://127.0.0.1:8081/');await startEmptyWorkout(page);await openAutomaticCamera(page);await openCameraControls(page);
  await expect(page.getByRole('button',{name:'Jeda kamera',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Selesaikan workout',exact:true}).click();
  expect(await page.evaluate(()=>(window as any).recorderCreations)).toBe(0);
@@ -16,19 +16,17 @@ test('recording is off by default and unavailable MIME preserves manual workouts
  await page.goto('http://127.0.0.1:8081/');
  await expect(page.getByLabel('Rekam video di perangkat')).not.toBeChecked();
  await page.getByLabel('Rekam video di perangkat').check();
- await startEmptyWorkout(page);await openAutomaticCamera(page);
- await page.getByRole('button',{name:'Aktifkan kamera',exact:true}).click();
+ await startEmptyWorkout(page);await openAutomaticCamera(page);await openCameraControls(page);
  await expect(page.getByText('Perekaman tidak tersedia. Workout tetap dapat dilanjutkan.',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Back to workout'}).click();
- await page.getByLabel('Reps manual').fill('8');await page.getByRole('button',{name:'Catat set manual',exact:true}).click();
+ await logPlannedSet(page,'squat','8');
  await expect(page.getByText('Total reps: 8',{exact:true})).toBeVisible();
  await expect(page.getByLabel('Rekam video di perangkat')).toBeDisabled();
 });
 test('real browser recorder produces playable local files and discard retains the workout',async({page})=>{
  const requests:{url:string;method:string}[]=[];page.on('request',r=>requests.push({url:r.url(),method:r.method()}));
  await page.goto('http://127.0.0.1:8081/');await page.getByLabel('Rekam video di perangkat').check();
- await startEmptyWorkout(page);await openAutomaticCamera(page);
- await page.getByRole('button',{name:'Aktifkan kamera',exact:true}).click();
+ await startEmptyWorkout(page);await openAutomaticCamera(page);await openCameraControls(page);
  await expect(page.getByText('Rekaman aktif di perangkat',{exact:true})).toBeVisible({timeout:15000});
  await expect.poll(()=>page.locator('video').evaluate(e=>(e as HTMLVideoElement).currentTime)).toBeGreaterThan(.5);
  await page.getByRole('button',{name:'Jeda kamera',exact:true}).click();
@@ -36,7 +34,7 @@ test('real browser recorder produces playable local files and discard retains th
  await expect(page.getByText('Rekaman aktif di perangkat',{exact:true})).toBeVisible({timeout:15000});
  await expect.poll(()=>page.locator('video').evaluate(e=>(e as HTMLVideoElement).currentTime)).toBeGreaterThan(.5);
  await page.getByRole('button',{name:'Back to workout'}).click();
- await page.getByLabel('Reps manual').fill('8');await page.getByRole('button',{name:'Catat set manual',exact:true}).click();
+ await logPlannedSet(page,'squat','8');
  await page.getByRole('button',{name:'Selesaikan workout',exact:true}).click();
  await expect(page.getByRole('link',{name:'Simpan segmen 1',exact:true})).toBeVisible();
  await expect(page.getByRole('link',{name:'Simpan segmen 2',exact:true})).toBeVisible();

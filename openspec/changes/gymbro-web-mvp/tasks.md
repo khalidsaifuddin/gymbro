@@ -106,6 +106,50 @@ Checkbox mencatat pekerjaan yang telah selesai atau masih terbuka. Ikuti `AGENTS
 - [x] 12.3 GREEN/REFACTOR: sudut 3D curl, fallback legacy 2D, guard pergantian sumber, dan toleransi visibility wrist lokal.
 - [x] 12.4 Jalankan unit/type/build/camera/vision dan dokumentasikan batas validasi tubuh nyata.
 
+## 13. Push-up, kontrol set, dan detail/media latihan
+
+- [x] 13.1 Tulis implementation plan grounded pada kode, default uncheck, gate lisensi, acceptance, file, urutan TDD, commands, dan handoff model ringan.
+- [x] 13.2 RED: default push-up side view dengan sisi jauh occluded, realistic floor-wrist replay, endpoint singkat, serta negatives/regresi curl dan squat.
+- [x] 13.3 GREEN/REFACTOR: policy sisi push-up default yang cocok dengan guide, parameter responsif, serta status kamera; validasi bahwa interrupted/partial/non-workout tidak dihitung.
+- [x] 13.4 RED: row identity A/B/C, edit final/raw provenance, uncheck/recheck, delete terakhir/tengah, restore/merge, input invalid, dan legacy reload.
+- [x] 13.5 GREEN/REFACTOR: domain remove/restore completed set, sessionRows browser-local, atomic record save dan rekonsiliasi sync tanpa menggandakan atau membangkitkan hasil.
+- [x] 13.6 RED → GREEN: completed kg/reps editor, delete/confirmation, completion checkbox yang reversible, LIVE state aktif, dan kamera `Akhiri set & kembali` tanpa frame terlambat/scroll.
+- [x] 13.7 RED → GREEN: reusable exercise detail dari Explore/picker/routine/workout dengan back context, instructions, player/fallback animasi SVG Flow dan kamera hanya untuk profil didukung.
+- [x] 13.8 RED → GREEN: pin source Flow dan implement manifest/importer deterministic untuk 1.257 animasi custom/3.771 frame; validasi ID/checksum/MIME/dimensions/attribution/provenance; exclude library dari offline precache dan gunakan lazy loading. 67 exercise tanpa animasi tidak boleh memakai ilustrasi pengganti.
+- [x] 13.9 Verifikasi inventory serta dokumentasikan provenance caveat: hanya 13 prompt asli tersimpan dari 1.257 animasi; attribution CC0-1.0 sejauh hak dimiliki tetap dekat player. Jangan klaim artwork profesional/divalidasi gerakan.
+- [x] 13.10 RED → GREEN: real PostgreSQL/account aggregate edit/delete/uncheck/retry/pull/conflict, dengan pending draft browser-local dan tanpa resurrection.
+- [x] 13.11 Jalankan unit/type/build/browser/account/Go, catat RED/GREEN aktual dan blocked/unrun; live test push-up sebelum koreksi terpisah dari gate akurasi formal.
+- [x] 13.12 Review diff/secret dan hasil validasi; catat live camera, OAuth, dan GitHub publication yang belum diverifikasi/diaktifkan.
+- [ ] 13.13 Publikasikan perubahan di branch fitur dan PR sesuai workflow repo, lalu archive change setelah review.
+
+## 14. Layout workout pada ponsel
+
+- [x] 14.1 Catat plan, screenshot symptom, komponen, dan acceptance untuk viewport 320–430 px sebelum kode.
+- [ ] 14.2 RED: browser regression sesi aktif memastikan document scroll width tidak melebihi viewport pada beberapa lebar ponsel; cek bounds statistik/kartu serta scroll tabel set yang tetap internal. Test dibuat, tetapi belum dapat dieksekusi karena Chrome abort saat startup.
+- [x] 14.3 GREEN/REFACTOR: batasi sizing shell/kartu, izinkan wrap pada header/summary, serta pertahankan scroll tabel set di dalam tabel.
+- [ ] 14.4 Jalankan browser regression, unit, typecheck, dan web export; catat RED/GREEN serta hasil aktual. Unit (294), typecheck, dan web export lulus; browser regression terhambat oleh Chrome startup.
+
+## 15. Hapus fallback entry dari sesi workout
+
+- [x] 15.1 Tulis plan, screenshot, cakupan, serta acceptance sebelum implementasi.
+- [ ] 15.2 RED: browser test ditulis, tetapi Playwright berhenti sebelum membuka halaman karena Chrome gagal pada `bootstrap_check_in`/MachPort rendezvous.
+- [x] 15.3 GREEN/REFACTOR: hapus panel beserta state dan copy yang hanya mendukung fallback, pertahankan target set/manual correction yang sudah ada.
+- [ ] 15.4 Jalankan browser regression, unit, typecheck, dan web export; unit 294/294, typecheck, dan export lulus; browser regression terblokir saat startup.
+
+## 16. Animasi detail latihan otomatis
+
+- [x] 16.1 Tulis plan, posisi player, perilaku reduced-motion, dan acceptance sebelum implementasi.
+- [ ] 16.2 RED: assertion urutan/autoplay ditulis; eksekusi RED tidak tersedia karena Chromium berhenti saat startup.
+- [x] 16.3 GREEN/REFACTOR: pindahkan media di atas kartu detail, mulai playback saat mount, dan tetap mengikuti reduced-motion.
+- [ ] 16.4 Jalankan browser regression, unit, typecheck, dan web export; unit 294/294, typecheck, dan export lulus; browser regression terblokir.
+
+## 17. Kamera sebagai tampilan penuh
+
+- [x] 17.1 Tulis plan, screenshot, cakupan viewport, auto-start, overlay, menu ikon, dan acceptance sebelum implementasi.
+- [ ] 17.2 RED: browser assertions auto-start, viewport bounds, merged status/framing overlay, collapsed sidebar dan accessible icon controls ditulis; test berhenti sebelum halaman dibuka karena `bootstrap_check_in`/MachPort rendezvous abort.
+- [x] 17.3 GREEN/REFACTOR: jadikan video panggung layar penuh, gabungkan status dan cue framing di atas video, sediakan kontrol aksi berikon dalam sidebar kanan yang dapat dilipat, dan mulai kamera saat view masuk dengan guard double-start.
+- [ ] 17.4 Unit 294/294, typecheck, dan web export lulus; browser regression terblokir saat startup. Ulangi di runtime yang dapat menjalankan Chrome.
+
 ## Workflow follow-up
 
 - Tinjau hasil implementasi dan bukti validasi sebelum archive change serta merge spesifikasi delta menjadi spesifikasi utama.

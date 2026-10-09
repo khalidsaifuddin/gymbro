@@ -194,6 +194,26 @@ export class WorkoutSession {
     set.reps = reps;
   }
 
+  removeCompletedSet(id:string):WorkoutSet {
+    const index=this.sets.findIndex(set=>set.id===id);
+    if(index<0)throw new Error('Set not found');
+    if(this.sets[index].endedAt===null)throw new Error('Only a completed set can be removed');
+    return structuredClone(this.sets.splice(index,1)[0]);
+  }
+
+  restoreCompletedSet(saved:WorkoutSet,edits:{reps?:number;loadKg?:number|null}={}):void {
+    if(this.sets.some(set=>set.id===saved.id))throw new Error('Set already exists');
+    const candidate=structuredClone(saved);
+    if(candidate.endedAt===null)throw new Error('Only a completed set can be restored');
+    if(edits.reps!==undefined){if(!Number.isSafeInteger(edits.reps)||edits.reps<0||edits.reps>2147483647)throw new Error('Reps must be a nonnegative integer within the storage range');candidate.reps=edits.reps;}
+    if(edits.loadKg!==undefined){this.validateLoad(edits.loadKg);const loadKg=edits.loadKg===null?null:Math.round(edits.loadKg*1000)/1000;if(loadKg!==candidate.loadKg)candidate.loadEdited=true;candidate.loadKg=loadKg;}
+    const savedAt=Math.max(this.options.clock(),this.startedAt,this.finishedAt??0);
+    const next=validateSnapshot({version:1,startedAt:this.startedAt,finishedAt:this.finishedAt,savedAt,
+      currentSetId:this.current?.id??null,sets:[...this.sets,candidate].sort((a,b)=>a.startedAt-b.startedAt),pauses:this.pauses});
+    this.sets=next.sets;
+    this.current=this.current?this.sets.find(set=>set.id===this.current!.id)??null:null;
+  }
+
   mergeSets(ids: string[]): void {
     if (ids.length < 2 || new Set(ids).size !== ids.length) throw new Error('Choose at least two distinct sets');
     const selected = ids.map(id => this.requireSet(id)).sort((a, b) => a.startedAt - b.startedAt);
