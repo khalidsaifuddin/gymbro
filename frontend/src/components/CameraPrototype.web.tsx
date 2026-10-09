@@ -11,7 +11,8 @@ import {LocalRecorder,browserRecorderEnvironment} from '../recording/local-recor
 import ExerciseGuide from './ExerciseGuide.web';
 import {BrowserPoseDetector} from '../detection/browser-pose-detector';
 import {TemporalExerciseRecognizer} from '../detection/temporal-exercise-recognizer';
-import {cameraGuides,exerciseLabels} from '../detection/camera-guides';
+import {cameraGuidance,cameraViewLabels,exerciseLabels} from '../detection/camera-guides';
+import {isCameraView,type CameraView} from '../domain/camera-view';
 
 type Choice='auto'|ExerciseId;
 const initial:WorkoutSummary={totalSets:0,totalReps:0,knownVolumeKg:0,volumeComplete:true,durationMs:0,pausedDurationMs:0,restDurationMs:0};
@@ -40,6 +41,7 @@ export default function CameraPrototype() {
   const [summary,setSummary]=useState(initial),[sets,setSets]=useState<WorkoutSet[]>([]);
   const [deleteId,setDeleteId]=useState<string|null>(null);
   const [mode,setMode]=useState<'camera'|'log'>('camera');
+  const [cameraView,setCameraView]=useState<CameraView>('auto');
   const refresh=(checkpoint=false) => {
     local.refresh(checkpoint);
     if (!workout.current) {setSummary(initial);setSets([]);return;}
@@ -78,7 +80,7 @@ export default function CameraPrototype() {
     const token=++epoch.current;
     getWorkout().resume();setLoading(true);setStatus('Memuat kamera dan model…');
     const worker=new BrowserPoseDetector();detector.current=worker;
-    recognizer.current=new TemporalExerciseRecognizer();
+    recognizer.current=new TemporalExerciseRecognizer({cameraView:local.preferences.current.cameraView??'auto'});
     recognizer.current.selectManual(profile.current==='auto'?null:profile.current);
     try {
       if (!navigator.mediaDevices?.getUserMedia) throw new Error('secure-context');
@@ -112,7 +114,8 @@ export default function CameraPrototype() {
               lastObservation.current=Date.now();
               const result=recognizer.current.process(pose);
               workout.current!.observe({...result.observation,labelSource:profile.current==='auto'?'automatic':'profile'});setRecognized(result.observation.exercise);
-              setStatus(result.reason==='camera-position'?'Sesuaikan kamera agar sendi terlihat.'
+              setStatus(result.reason==='camera-position'?'Pastikan sendi terlihat dari posisi kamera semula, atau catat set manual.'
+                :result.reason==='visible-side-changed'?'Sisi tubuh yang terlihat berubah. Siklus terputus dibuang; pertahankan posisi kamera semula.'
                 :result.reason==='curl-not-bilateral'?'Gerakkan kedua lengan serempak atau catat set manual.'
                 :result.reason==='exercise-unknown'||result.reason==='exercise-ambiguous'?'Gerakan belum dikenali. Pilih profil latihan atau catat set manual.'
                 :result.reason?'Tracking terputus. Pastikan tubuh dan sendi terlihat.':'Tracking aktif');
@@ -159,6 +162,7 @@ export default function CameraPrototype() {
   const openRecord=(record:LocalWorkout)=>{
     stopResources();local.open(record);
     const p=local.preferences.current;profile.current=p.profile;setChoice(p.profile);
+    setCameraView(p.cameraView??'auto');
     setExercise(p.manualExercise);setReps(p.manualReps);setLoad(p.manualLoad);
     setFinished(workout.current!.isFinished());setPaused(!workout.current!.isFinished());setRunning(false);
     setStatus(workout.current!.isFinished()?'Workout selesai':'Sesi dipulihkan dalam keadaan jeda. Aktifkan kamera kembali atau lanjutkan manual.');refresh();
@@ -167,8 +171,8 @@ export default function CameraPrototype() {
   const active=sets.find(set=>set.endedAt===null),last=sets.at(-1);
   const restTarget=local.preferences.current.restSeconds[last?.exercise??exercise]??120;
   const rest=Math.floor((workout.current?.restElapsedMs()??0)/1000);
-  const guidance=choice==='auto'?'Satu orang, kamera diam, seluruh tubuh terlihat. Pilih profil latihan untuk panduan posisi khusus.':cameraGuides[choice];
-  const resetWorkout=()=>{stopResources();recorder.current=null;recordOptIn.current=false;setRecordEnabled(false);setRecordNotice('');local.newWorkout();setFinished(false);setPaused(false);setRecognized(null);setPendingChoice(null);setPendingAuto(null);profile.current='auto';setChoice('auto');setExercise('squat');setReps('10');setLoad('');setStatus('Kamera belum aktif');refresh();};
+  const guidance=cameraGuidance(choice==='auto'?null:choice,cameraView,!!workout.current);
+  const resetWorkout=()=>{stopResources();recorder.current=null;recordOptIn.current=false;setRecordEnabled(false);setRecordNotice('');local.newWorkout();setCameraView('auto');setFinished(false);setPaused(false);setRecognized(null);setPendingChoice(null);setPendingAuto(null);profile.current='auto';setChoice('auto');setExercise('squat');setReps('10');setLoad('');setStatus('Kamera belum aktif');refresh();};
   return <View style={styles.card}>
     <style>{`button,input,select{font:inherit;font-family:system-ui,sans-serif}label,.workout-log{font-family:system-ui,sans-serif} .workout-log button{background:#e9f3ff;border:0;border-radius:8px;padding:10px;color:#1268c8;cursor:pointer} .exercise-card{border:1px solid #e2e9f2;border-radius:14px;padding:16px;margin:16px 0} .exercise-card h2{font-size:20px;color:#1268c8;margin:0 0 8px} .exercise-card table{border-collapse:collapse;width:100%;min-width:540px} .exercise-card th{text-align:left;color:#63708a;font-size:13px;padding:12px 4px} .exercise-card td{padding:8px 4px;border-top:1px solid #edf1f7} .exercise-card input[type=number]{width:74px;box-sizing:border-box;border:1px solid #cbd5e1;padding:10px;border-radius:8px} .exercise-card small{display:block;color:#63708a;font-size:12px;padding-top:6px}`}</style>
     <Text style={styles.heading}>{mode==='camera'?'Workout dengan kamera':'Log workout'}</Text>
@@ -193,6 +197,16 @@ export default function CameraPrototype() {
       style={{display:mode==='camera'?'block':'none',width:'100%',maxHeight:360,background:'#101b2d',objectFit:'contain',borderRadius:12}}/>
     <Text accessibilityLiveRegion="polite" style={styles.status}>{status}</Text>
     <Text>Gerakan: {recognized?exerciseLabels[recognized]:'Belum dikenali'}</Text>
+    <label>Sudut kamera <select aria-label="Sudut kamera" value={local.recovery?.preferences.cameraView??cameraView} disabled={controlsDisabled||!!workout.current}
+      onChange={event=>{
+        const next=event.target.value;
+        if(workout.current||local.recovery||!isCameraView(next))return;
+        local.preferences.current.cameraView=next;setCameraView(next);
+      }} style={{padding:10,margin:8}}>
+      {Object.entries(cameraViewLabels).map(([id,label])=><option key={id} value={id}>{label}</option>)}
+    </select></label>
+    <Text>Posisi kamera tetap dari awal hingga akhir sesi. Untuk mengganti posisi, selesaikan sesi dan mulai workout baru.</Text>
+    <Text>Pilihan sudut belum membuktikan akurasi otomatis. Jika sendi terhalang, catat set manual.</Text>
     {mode==='camera'&&<><label>Profil kamera <select aria-label="Profil kamera" value={choice} disabled={finished}
       onChange={event=>choose(event.target.value as Choice)} style={{padding:10,margin:8}}>
       <option value="auto">Otomatis</option>

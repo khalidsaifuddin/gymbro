@@ -61,6 +61,14 @@ Checkbox mencatat pekerjaan yang telah selesai atau masih terbuka. Ikuti `AGENTS
 - [ ] 6.4 Jalankan kamera/recording/pause/offline pada perangkat nyata dan evaluasi ulang lima gerakan setelah perubahan inference; deliver performa terukur dan bukti gate akurasi tanpa koreksi manual.
 - [x] 6.5 Perbarui setup/start instructions berdasarkan command yang telah dijalankan; verifikasi cold start/readiness requests, list konfigurasi yang belum tersedia, dan jangan klaim deployment/native/Safari selesai.
 
+## 7. Sudut kamera tetap per sesi
+
+- [x] 7.1 Catat plan pilihan arah, batas posisi tetap, kompatibilitas data lokal, dan skenario TDD sebelum kode.
+- [x] 7.2 RED → GREEN → REFACTOR: pilihan arah terkunci selama sesi termasuk pause/rest/pergantian latihan; recovery mempertahankan arah, data lama tetap terbaca, dan sesi baru membuka pilihan.
+- [x] 7.3 RED → GREEN → REFACTOR: gunakan sisi tubuh yang terlihat untuk profil samping/diagonal; curl tetap bilateral, pergantian sisi membuang siklus parsial, dan unknown/tracking loss mempertahankan reps tanpa menutup set.
+- [x] 7.4 Jalankan unit/type/build/browser termasuk regresi sync; dokumentasikan bukti sintetis dan pisahkan dari akurasi perangkat nyata yang belum diuji.
+- [ ] 7.5 Evaluasi berizin tiap kombinasi arah/latihan yang hendak diklaim; dokumentasikan unknown, error reps, dan arah yang gagal atau belum diuji saat live testing.
+
 ## Workflow follow-up
 
 - Tinjau hasil implementasi dan bukti validasi sebelum archive change serta merge spesifikasi delta menjadi spesifikasi utama.

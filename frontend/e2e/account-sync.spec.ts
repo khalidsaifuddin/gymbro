@@ -20,6 +20,23 @@ test('offline account workout stays durable and uploads after reconnect without 
 });
 async function history(page:Page){const response=await page.request.get('/api/v1/workouts');expect(response.status()).toBe(200);return response.json();}
 async function correct(page:Page,reps:string){await page.getByRole('button',{name:'Mode log',exact:true}).click();await page.getByLabel('Reps set 1 Flat barbell bench press',{exact:true}).fill(reps);await page.getByRole('button',{name:'Simpan set 1 Flat barbell bench press',exact:true}).click();await expect(page.getByText('Tersimpan di perangkat',{exact:true})).toBeVisible();}
+test('finishing during an in-flight active mutation uploads the completed result without camera configuration',async({page,context})=>{
+ await context.addCookies([{name:'fixture_subject',value:'fixture-final-save',url:'http://127.0.0.1:8094'}]);
+ await page.goto('/');await login(page);await page.getByLabel('Sudut kamera',{exact:true}).selectOption('front-right');
+ let signalStarted!:()=>void,release!:()=>void,first=true;
+ const started=new Promise<void>(resolve=>{signalStarted=resolve;}),gate=new Promise<void>(resolve=>{release=resolve;});
+ await page.route('**/api/v1/workout-mutations',async route=>{
+  const body=route.request().postDataJSON();expect(JSON.stringify(body)).not.toContain('cameraView');
+  if(first&&body.workout?.status==='active'){first=false;const response=await route.fetch();signalStarted();await gate;await route.fulfill({response});}
+  else await route.continue();
+ });
+ await page.getByLabel('Latihan untuk set manual').selectOption('bench-press');await page.getByLabel('Beban kg',{exact:true}).fill('40');
+ await page.getByRole('button',{name:'Catat set manual',exact:true}).click();await started;
+ await page.getByRole('button',{name:'Selesaikan workout',exact:true}).click();await expect(page.getByText('Tersimpan di perangkat',{exact:true})).toBeVisible();release();
+ await expect.poll(async()=>(await history(page))[0]?.status).toBe('completed');
+ await expect(page.getByText('Sinkronisasi selesai',{exact:true})).toBeVisible();
+ await expect(page.getByLabel('Sudut kamera',{exact:true})).toHaveValue('front-right');
+});
 test('two devices preserve divergent edits and require explicit conflict resolution',async({page,context,browser})=>{
  await context.addCookies([{name:'fixture_subject',value:'fixture-conflict',url:'http://127.0.0.1:8094'}]);await page.goto('/');await login(page);await manual(page);await expect.poll(async()=>(await history(page))[0]?.status).toBe('completed');
  const other=await browser.newContext();await other.addCookies([{name:'fixture_subject',value:'fixture-conflict',url:'http://127.0.0.1:8094'}]);const second=await other.newPage();await second.goto('http://127.0.0.1:8093');await login(second);await second.getByRole('button',{name:'Muat riwayat akun',exact:true}).click();await second.getByRole('button',{name:'Lihat workout',exact:true}).first().click();

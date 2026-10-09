@@ -9,6 +9,26 @@ function record(id='workout-1'):LocalWorkout {
  return {id,revision:0,snapshot:session.exportSnapshot(),preferences:{profile:'auto',restSeconds:{},manualExercise:'squat',manualReps:'10',manualLoad:''}};
 }
 describe('durable guest workout storage',()=>{
+ it('persists a selected camera view across reopen while accepting legacy records without it',async()=>{
+  const factory=new IDBFactory(),a=new WorkoutStore(factory,'test');
+  const selected=record('selected');selected.preferences.cameraView='rear-right';
+  const saved=await a.save(selected,0);await a.save(record('legacy'),0);await a.close();
+  const b=new WorkoutStore(factory,'test'),rows=await b.list();
+  expect(rows.find(r=>r.id==='selected')).toEqual(saved);
+  expect(rows.find(r=>r.id==='legacy')!.preferences.cameraView).toBeUndefined();await b.close();
+ });
+ it.each(['front','rear-left',undefined] as const)('rejects camera view changes within an existing session: %s',async(next)=>{
+  const store=new WorkoutStore(new IDBFactory(),'test'),selected=record();selected.preferences.cameraView='side-left';
+  const saved=await store.save(selected,0),changed=structuredClone(saved);changed.preferences.cameraView=next;
+  await expect(store.save(changed,1)).rejects.toThrow(/camera.*fixed/i);
+  expect(await store.list()).toEqual([saved]);await store.close();
+ });
+ it('rejects unknown camera views and prevents changing a recovered legacy session',async()=>{
+  const store=new WorkoutStore(new IDBFactory(),'test'),bad:any=record();bad.preferences.cameraView='arbitrary';
+  await expect(store.save(bad,0)).rejects.toThrow(/record/i);
+  const saved=await store.save(record(),0);saved.preferences.cameraView='front';
+  await expect(store.save(saved,1)).rejects.toThrow(/camera.*fixed/i);await store.close();
+ });
  it('retains verified records after closing and reopening the database',async()=>{
   const factory=new IDBFactory(),a=new WorkoutStore(factory,'test');const saved=await a.save(record(),0);await a.close();
   const b=new WorkoutStore(factory,'test');expect(await b.list()).toEqual([saved]);
