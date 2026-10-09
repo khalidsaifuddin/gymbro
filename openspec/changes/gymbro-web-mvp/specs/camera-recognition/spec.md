@@ -49,6 +49,11 @@ Aplikasi SHALL memberi panduan kamera sesuai latihan dan peringatan saat tubuh t
 - **THEN** penghitung SHALL menerima rentang sedang tanpa membutuhkan tahan pose 80 ms
 - **AND** selisih kecil kedua lengan saat melintasi ambang curl SHALL tidak memutus siklus; kedua lengan tetap harus mencapai endpoint, sedangkan landmark hilang atau confidence sangat rendah memutus siklus
 
+#### Scenario: Curl toward the chest
+- **WHEN** curl bilateral bergerak mendekati dada dengan landmark gambar relevan masih terukur dan landmark 3D estimasi valid
+- **THEN** adapter SHALL memakai sudut siku 3D agar proyeksi gambar tidak memaksa pengguna membuka lengan menjauhi badan
+- **AND** visibility wrist moderat rendah dapat diterima hanya pada area dada dengan presence yang cukup; sendi hilang dan perubahan sumber sudut membuang siklus parsial
+
 ### Requirement: Camera position by exercise
 
 Aplikasi SHALL menyimpan pilihan arah kamera per latihan dan mempertahankannya selama set latihan tersebut. Pengguna SHALL dapat mengubah arah setelah berpindah latihan atau sebelum set berikutnya; perubahan arah membuang siklus parsial dan tidak menghapus repetisi terverifikasi. Dukungan otomatis suatu sudut SHALL hanya diklaim setelah kombinasi sudut/latihan tersebut dievaluasi.

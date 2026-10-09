@@ -9,7 +9,7 @@ test('MediaPipe worker memakai model/WASM lokal dan tidak mengunggah frame', asy
   const result=await page.evaluate(async () => {
     return window.runPoseSmoke();
   });
-  expect(result).toMatchObject({timestampMs:100,landmarks:[],aspectRatio:4/3});
+  expect(result).toMatchObject({timestampMs:100,landmarks:[],worldLandmarks:[],aspectRatio:4/3});
   expect(errors).toEqual([]);
   expect(requests.some(request => request.url.endsWith('pose_landmarker_full.task'))).toBe(true);
   expect(requests.some(request => request.url.endsWith('.wasm'))).toBe(true);

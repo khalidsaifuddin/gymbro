@@ -24,7 +24,8 @@ port.onmessage=async event => {
     }
     const prediction=detector.detectForVideo(request.bitmap,request.timestampMs);
     port.postMessage({kind:'pose',requestId:request.requestId,frame:{timestampMs:request.timestampMs,
-      landmarks:prediction.landmarks[0] ?? [],aspectRatio:request.bitmap.width/request.bitmap.height}});
+      landmarks:prediction.landmarks[0] ?? [],worldLandmarks:prediction.worldLandmarks[0] ?? [],
+      aspectRatio:request.bitmap.width/request.bitmap.height}});
   } catch {
     port.postMessage({kind:'error',requestId:request.requestId,
       message:'Model/inference unavailable; check local model assets or use manual logging'});

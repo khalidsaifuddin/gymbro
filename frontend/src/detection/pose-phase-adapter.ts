@@ -3,12 +3,15 @@ import {allowsSingleSide,isCameraView,type CameraView} from '../domain/camera-vi
 import {isCableExercise} from '../domain/exercises';
 import type {SupportedExerciseId} from '../domain/exercises';
 import {CablePoseAdapter} from './cable-pose-adapter';
-import {valid,angle} from './pose-geometry';
+import {valid,angle,angle3d,validWorld} from './pose-geometry';
 
 export type Landmark = { x: number; y: number; visibility?: number; presence?: number };
+export type WorldLandmark = Landmark & {z:number};
 export type PoseFrame = {
   timestampMs: number;
   landmarks: readonly Landmark[];
+  // Estimated monocular coordinates in meters, independent of image aspect ratio.
+  worldLandmarks?: readonly WorldLandmark[];
   // videoWidth / videoHeight; default 1 hanya untuk fixture/perangkat persegi.
   aspectRatio?: number;
 };
@@ -31,6 +34,7 @@ export class PosePhaseAdapter {
   private frames = 0;
   private selectedSide: 0|1|null = null;
   private cable: CablePoseAdapter|null=null;
+  private curlAngleSource:'image'|'world'|null=null;
 
   constructor(options: PoseOptions) {
     const sensitive = options.exercise === 'squat' || options.exercise === 'dumbbell-curl';
@@ -64,7 +68,9 @@ export class PosePhaseAdapter {
     // Moderate confidence is usable when every measured joint remains in-frame.
     // Missing/very weak points still invalidate the entire cycle immediately.
     const minConfidence = isSquat || exercise === 'dumbbell-curl' ? .45 : .55;
-    const eligible=([0,1] as const).filter(side=>required.every(index=>valid(raw[index+side],minConfidence)));
+    const eligible=([0,1] as const).filter(side=>required.every(index=>
+      exercise === 'dumbbell-curl' && index === 15
+        ? this.validCurlWrist(raw,side) : valid(raw[index+side],minConfidence)));
     const single=allowsSingleSide(this.options.cameraView)&&exercise!=='dumbbell-curl';
     if (raw.length !== 33 || (single ? eligible.length===0 : eligible.length!==2)) {
       return this.invalid('landmarks-unavailable');
@@ -101,9 +107,24 @@ export class PosePhaseAdapter {
     if (exercise === 'dumbbell-curl' && sides.some(side => points[13+side].y <= points[11+side].y)) {
       return this.invalid('camera-position');
     }
-    const angles = sides.map(side => isSquat
-      ? angle(points[23+side],points[25+side],points[27+side])
-      : angle(points[11+side],points[13+side],points[15+side]));
+    const world = frame.worldLandmarks;
+    const useWorld = exercise === 'dumbbell-curl' && world !== undefined;
+    if(exercise === 'dumbbell-curl'){
+      const source=useWorld?'world':'image';
+      if(this.curlAngleSource !== null && source !== this.curlAngleSource){
+        this.curlAngleSource=source;
+        return this.invalid('pose-source-changed');
+      }
+      this.curlAngleSource=source;
+      if(useWorld && (world.length !== 33 || sides.some(side=>
+        [11,13,15].some(index=>!validWorld(world[index+side]))))){
+        return this.invalid('world-landmarks-unavailable');
+      }
+    }
+    const angles = sides.map(side => useWorld
+      ? angle3d(world![11+side],world![13+side],world![15+side])
+      : isSquat ? angle(points[23+side],points[25+side],points[27+side])
+        : angle(points[11+side],points[13+side],points[15+side]));
     if (angles.some(value => value === null)) return this.invalid('landmarks-unavailable');
     const values: [number,number] = [angles[0]!,angles[1]??angles[0]!];
     if (exercise === 'dumbbell-curl' && Math.abs(values[0]-values[1]) > 30) {
@@ -135,6 +156,22 @@ export class PosePhaseAdapter {
     const ready = exercise === 'dumbbell-curl' ? 140 : exercise === 'squat' ? 145 : 155;
     const peak = exercise === 'dumbbell-curl' ? 100 : exercise === 'squat' ? 130 : exercise === 'push-up' ? 100 : 105;
     return degrees >= ready ? 'ready' : degrees <= peak ? 'peak' : 'moving';
+  }
+
+  private validCurlWrist(points:readonly Landmark[],side:0|1):boolean {
+    const wrist=points[15+side];
+    // Self-overlap at the chest can reduce visibility without losing presence.
+    // Do not reuse old coordinates or relax confidence elsewhere in the image.
+    if(!valid(wrist,.35) || (wrist.presence !== undefined && wrist.presence < .45))return false;
+    if(wrist.visibility! >= .45)return true;
+    if(![11,12,23,24].every(index=>valid(points[index],.45)))return false;
+    const shoulderY=(points[11].y+points[12].y)/2;
+    const height=(points[23].y+points[24].y)/2-shoulderY;
+    const width=Math.abs(points[11].x-points[12].x);
+    return height > .04 && width > .02 &&
+      wrist.y >= shoulderY-height*.1 && wrist.y <= shoulderY+height*.65 &&
+      wrist.x >= Math.min(points[11].x,points[12].x)-width*.25 &&
+      wrist.x <= Math.max(points[11].x,points[12].x)+width*.25;
   }
 
   private invalid(reason: string, bilateral?: boolean): PoseResult {

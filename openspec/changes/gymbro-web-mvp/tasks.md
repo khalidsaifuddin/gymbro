@@ -99,6 +99,13 @@ Checkbox mencatat pekerjaan yang telah selesai atau masih terbuka. Ikuti `AGENTS
 - [x] 11.3 GREEN/REFACTOR: parameter squat/curl responsif, bilateral tanpa reset akibat lintas ambang kecil, dan sampling kamera lebih sering.
 - [x] 11.4 Jalankan unit/type/build, catat bukti aktual serta batas evaluasi perangkat nyata.
 
+## 12. Curl mendekati dada
+
+- [x] 12.1 Catat hipotesis, plan, spesifikasi, dan skenario curl dekat dada sebelum kode.
+- [x] 12.2 RED: replay curl kedalaman, wrist confidence dekat dada, dan transport worldLandmarks; regresi negatif untuk kehilangan tracking/satu tangan.
+- [x] 12.3 GREEN/REFACTOR: sudut 3D curl, fallback legacy 2D, guard pergantian sumber, dan toleransi visibility wrist lokal.
+- [x] 12.4 Jalankan unit/type/build/camera/vision dan dokumentasikan batas validasi tubuh nyata.
+
 ## Workflow follow-up
 
 - Tinjau hasil implementasi dan bukti validasi sebelum archive change serta merge spesifikasi delta menjadi spesifikasi utama.

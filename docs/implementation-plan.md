@@ -14,6 +14,8 @@ Revisi setelah live testing meliputi sensitivitas squat/curl, katalog teks 1.324
 
 Follow-up missed reps (2026-10-09): pengguna memilih sensitivitas lebih tinggi. Plan rinci ada di `implementation-rep-sensitivity.md`; task 11 change `gymbro-web-mvp` mencatat RED/GREEN dan batas bukti perangkat nyata.
 
+Follow-up curl dekat dada: `implementation-chest-curl.md` mencatat penggunaan sudut 3D estimasi model dan toleransi visibility wrist lokal; task 12 mencatat replay dan validasi tanpa klaim akurasi perangkat.
+
 Sebelum menulis kode, uraikan task yang sedang dikerjakan beserta skenario penerimaan, file terdampak, dan perintah validasinya. Ikuti RED → GREEN → REFACTOR dan simpan hasil tes sebenarnya. Dokumentasi tidak memerlukan tes aplikasi palsu.
 
 ## 1. Fondasi dan domain workout
