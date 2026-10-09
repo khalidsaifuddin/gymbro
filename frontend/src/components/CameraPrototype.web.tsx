@@ -13,6 +13,8 @@ import {BrowserPoseDetector} from '../detection/browser-pose-detector';
 import {TemporalExerciseRecognizer} from '../detection/temporal-exercise-recognizer';
 import {cameraGuidance,cameraViewLabels,exerciseLabels} from '../detection/camera-guides';
 import {isCameraView,type CameraView} from '../domain/camera-view';
+import type {PoseFrame} from '../detection/pose-phase-adapter';
+import CameraFramingOverlay from './CameraFramingOverlay.web';
 
 type Choice='auto'|ExerciseId;
 const initial:WorkoutSummary={totalSets:0,totalReps:0,knownVolumeKg:0,volumeComplete:true,durationMs:0,pausedDurationMs:0,restDurationMs:0};
@@ -24,6 +26,8 @@ export default function CameraPrototype() {
   const account=useAccount(),local=useLocalWorkout(account.user?.id??null),{workout,getWorkout}=local;
   const offlineStatus=useOfflineCache();
   const video=useRef<HTMLVideoElement>(null);
+  const [overlayFrame,setOverlayFrame]=useState<PoseFrame|null>(null);
+  const [videoAspectRatio,setVideoAspectRatio]=useState(16/9);
   const detector=useRef<BrowserPoseDetector|null>(null), recognizer=useRef(new TemporalExerciseRecognizer());
   const stream=useRef<MediaStream|null>(null), epoch=useRef(0), animation=useRef(0), live=useRef(false);
   const lastObservation=useRef(0);
@@ -50,6 +54,7 @@ export default function CameraPrototype() {
   };
   const stopResources=() => {
     epoch.current++;live.current=false;cancelAnimationFrame(animation.current);
+    setOverlayFrame(null);
     detector.current?.stop();detector.current=null;
     if(recorder.current?.isRecording())setRecordNotice('Rekaman berhenti. Segmen tersedia saat workout selesai.');
     void recorder.current?.pause();
@@ -68,6 +73,7 @@ export default function CameraPrototype() {
       if(recorder.current?.error())setRecordNotice('Rekaman gagal. Hasil workout tetap disimpan; tidak ada pemulihan video setelah reload.');
       if (live.current&&lastObservation.current&&Date.now()-lastObservation.current>1000) {
         workout.current?.observe({exercise:null,visible:false,phase:'moving'});
+        setOverlayFrame(null);
         setStatus('Tracking terputus. Pastikan tubuh dan sendi terlihat.');
       }
       workout.current?.tick();refresh(true);
@@ -78,7 +84,7 @@ export default function CameraPrototype() {
     if (loading||finished) return;
     if (document.hidden) {pause();return;}
     const token=++epoch.current;
-    getWorkout().resume();setLoading(true);setStatus('Memuat kamera dan model…');
+    getWorkout().resume();setLoading(true);setOverlayFrame(null);setStatus('Memuat kamera dan model…');
     const worker=new BrowserPoseDetector();detector.current=worker;
     recognizer.current=new TemporalExerciseRecognizer({cameraView:local.preferences.current.cameraView??'auto'});
     recognizer.current.selectManual(profile.current==='auto'?null:profile.current);
@@ -112,6 +118,7 @@ export default function CameraPrototype() {
             if (epoch.current!==token||!live.current) return;
             if (pose) {
               lastObservation.current=Date.now();
+              setOverlayFrame(pose);
               const result=recognizer.current.process(pose);
               workout.current!.observe({...result.observation,labelSource:profile.current==='auto'?'automatic':'profile'});setRecognized(result.observation.exercise);
               setStatus(result.reason==='camera-position'?'Pastikan sendi terlihat dari posisi kamera semula, atau catat set manual.'
@@ -193,8 +200,17 @@ export default function CameraPrototype() {
     <View style={styles.summary}>{mode==='camera'?<><Text testID="live-rep-counter" style={styles.counter}>{active?.reps??0}</Text><Text>Reps set aktif · Set {active?sets.filter(s=>s.exercise===active.exercise).length:sets.length+1}</Text></>:<Text style={styles.heading}>{summary.totalSets} set · {summary.totalReps} reps · {summary.knownVolumeKg} kg</Text>}
       <Text>Istirahat: {rest} / {restTarget} detik</Text><Text>Durasi aktif: {Math.floor(summary.durationMs/1000)} detik</Text></View>
     {mode==='camera'&&<Text>Mode otomatis memerlukan pengenalan pola awal. Pilih profil sebelum mulai untuk menghitung sejak pose awal.</Text>}
-    <video ref={video} autoPlay muted playsInline aria-label="Kamera workout"
-      style={{display:mode==='camera'?'block':'none',width:'100%',maxHeight:360,background:'#101b2d',objectFit:'contain',borderRadius:12}}/>
+    <div style={{display:mode==='camera'?'block':'none',position:'relative',width:'100%',
+      background:'#101b2d',borderRadius:12,overflow:'hidden'}}>
+      <video ref={video} autoPlay muted playsInline aria-label="Kamera workout"
+        onLoadedMetadata={()=>{
+          if(video.current?.videoWidth&&video.current.videoHeight)
+            setVideoAspectRatio(video.current.videoWidth/video.current.videoHeight);
+        }}
+        style={{display:'block',width:'100%',maxHeight:360,background:'#101b2d',objectFit:'contain'}}/>
+      <CameraFramingOverlay frame={running?overlayFrame:null} exercise={choice==='auto'?null:choice}
+        cameraView={cameraView} videoAspectRatio={videoAspectRatio}/>
+    </div>
     <Text accessibilityLiveRegion="polite" style={styles.status}>{status}</Text>
     <Text>Gerakan: {recognized?exerciseLabels[recognized]:'Belum dikenali'}</Text>
     <label>Sudut kamera <select aria-label="Sudut kamera" value={local.recovery?.preferences.cameraView??cameraView} disabled={controlsDisabled||!!workout.current}

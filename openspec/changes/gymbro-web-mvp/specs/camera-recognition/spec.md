@@ -26,6 +26,11 @@ Aplikasi SHALL menampilkan gerakan belum dikenali ketika sinyal tidak meyakinkan
 
 Aplikasi SHALL memberi panduan kamera sesuai latihan dan peringatan saat tubuh terhalang/keluar gambar. Gangguan menghentikan hitungan serta penutupan set otomatis, mempertahankan rep terverifikasi, dan membuang siklus terputus.
 
+#### Scenario: Visible joint and framing overlay
+- **WHEN** preview kamera menerima landmark pose lokal
+- **THEN** aplikasi menggambar sendi dan sambungan yang valid di atas video, memberi panduan bagian tubuh yang harus masuk bingkai sesuai profil, dan tidak menyebut framing baik sebagai bukti gerakan dikenali
+- **AND** sendi yang hilang tidak digambar sebagai sambungan semu, serta overlay dibersihkan saat kamera dijeda atau berhenti
+
 #### Scenario: Camera occlusion exceeds boundary
 - **WHEN** tubuh hilang dari pandangan selama lebih dari 15 detik saat set aktif
 - **THEN** aplikasi memperingatkan pengguna dan tidak menutup set hanya karena gangguan tersebut

@@ -69,6 +69,13 @@ Checkbox mencatat pekerjaan yang telah selesai atau masih terbuka. Ikuti `AGENTS
 - [x] 7.4 Jalankan unit/type/build/browser termasuk regresi sync; dokumentasikan bukti sintetis dan pisahkan dari akurasi perangkat nyata yang belum diuji.
 - [ ] 7.5 Evaluasi berizin tiap kombinasi arah/latihan yang hendak diklaim; dokumentasikan unknown, error reps, dan arah yang gagal atau belum diuji saat live testing.
 
+## 8. Overlay sendi dan framing kamera
+
+- [x] 8.1 Catat plan, batas overlay versus akurasi, serta skenario profil bilateral/satu sisi sebelum kode.
+- [x] 8.2 RED: tes sendi/sambungan valid, framing per profil, koordinat preview, dan pembersihan saat pause.
+- [x] 8.3 GREEN/REFACTOR: tampilkan skeleton, bingkai, dan pesan framing lokal tanpa mengubah recognizer atau mengirim pose.
+- [x] 8.4 Jalankan unit/type/build/browser dan pisahkan bukti sintetis dari uji kamera nyata.
+
 ## Workflow follow-up
 
 - Tinjau hasil implementasi dan bukti validasi sebelum archive change serta merge spesifikasi delta menjadi spesifikasi utama.

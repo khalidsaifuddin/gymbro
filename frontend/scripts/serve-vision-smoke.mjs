@@ -3,7 +3,7 @@ import { createServer } from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
 
-const temporary='/workspace/.cache/vision-smoke';
+const temporary=resolve('node_modules/.cache/vision-smoke');
 await mkdir(temporary,{recursive:true});
 await build({entryPoints:['e2e/fixtures/vision-smoke.ts'],outfile:temporary+'/smoke.js',bundle:true,format:'iife',platform:'browser'});
 const assets=resolve('public/vision');
