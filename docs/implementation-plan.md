@@ -4,6 +4,8 @@ Status: domain, prototipe kamera, UI/persistence/video, tiga schema PostgreSQL, 
 
 Tahap 7 menambahkan pilihan sudut yang terkunci selama sesi, recovery konfigurasi lokal, dan pelacakan sisi tubuh untuk profil samping/diagonal. Lihat `implementation-stage-7.md` serta `validation-stage-7.md`; ini belum membuktikan akurasi perspektif nyata.
 
+Follow-up overlay sendi dan framing kamera direncanakan pada `implementation-camera-framing-overlay.md`. Overlay memakai landmark lokal yang sudah ada dan tidak menjadi bukti akurasi pengenalan.
+
 ## Cara kerja setiap tahap
 
 Sebelum menulis kode, uraikan task yang sedang dikerjakan beserta skenario penerimaan, file terdampak, dan perintah validasinya. Ikuti RED → GREEN → REFACTOR dan simpan hasil tes sebenarnya. Dokumentasi tidak memerlukan tes aplikasi palsu.
