@@ -29,8 +29,8 @@ const definitions=[
   ready:pose([125,55],[125,82],[126,149],[171,88],[217,94],[185,149],[207,212],[180,94],[226,100],[178,153],[198,212]),
   peak:pose([125,55],[125,82],[126,149],[95,120],[151,139],[185,149],[207,212],[107,126],[162,145],[178,153],[198,212])},
  {id:'face-pull',label:'Rope face pull bilateral',view:'Kamera depan menyerong',equipment:'cable',pulley:[270,66],
-  ready:pose([150,50],[125,82],[150,149],[102,88],[79,94],[133,180],[126,212],[198,88],[221,94],[167,180],[174,212],[175,82]),
-  peak:pose([150,50],[125,82],[150,149],[103,78],[138,67],[133,180],[126,212],[197,78],[162,67],[167,180],[174,212],[175,82])},
+  ready:pose([125,50],[100,82],[125,149],[161,85],[222,88],[108,180],[101,212],[191,88],[232,94],[142,180],[149,212],[150,82]),
+  peak:pose([125,50],[100,82],[125,149],[79,89],[114,65],[108,180],[101,212],[182,81],[139,65],[142,180],[149,212],[150,82])},
  {id:'straight-arm-pulldown',label:'Straight-arm cable pulldown bilateral',view:'Kamera samping menyerong',equipment:'cable',pulley:[270,20],
   ready:pose([116,50],[120,80],[120,149],[165,80],[210,80],[118,179],[114,212],[173,85],[218,85],[130,179],[126,212]),
   peak:pose([116,50],[120,80],[120,149],[137,115],[154,150],[118,179],[114,212],[147,117],[164,152],[130,179],[126,212])},
@@ -50,9 +50,10 @@ function figure(def,moving=false,peak=false){
  if(def.equipment==='cable'){
   if(def.id==='face-pull')svg+=line(...a.shoulder,...a.shoulder2,'','#1268c8',8)+line(...a.shoulder2,...a.hip,'','#1268c8',10);
   // One shared attachment/stack: cable to hand midpoint, bar/rope joins hands.
-  const mid=p=>[(p.hand[0]+p.hand2[0])/2,(p.hand[1]+p.hand2[1])/2],ma=mid(a),mb=mid(b);
+  const mid=p=>[(p.hand[0]+p.hand2[0])/2+(def.id==='face-pull'?18:0),(p.hand[1]+p.hand2[1])/2],ma=mid(a),mb=mid(b);
   svg+=line(...def.pulley,...ma,moving?anim('x2',ma[0],mb[0])+anim('y2',ma[1],mb[1]):'','#63708a',2);
-  svg+=line(...a.hand,...a.hand2,moving?anim('x1',a.hand[0],b.hand[0])+anim('y1',a.hand[1],b.hand[1])+anim('x2',a.hand2[0],b.hand2[0])+anim('y2',a.hand2[1],b.hand2[1]):'','#15233d',5);
+  if(def.id==='face-pull')for(const key of ['hand','hand2'])svg+=line(...ma,...a[key],moving?anim('x1',ma[0],mb[0])+anim('y1',ma[1],mb[1])+anim('x2',a[key][0],b[key][0])+anim('y2',a[key][1],b[key][1]):'','#15233d',4);
+  else svg+=line(...a.hand,...a.hand2,moving?anim('x1',a.hand[0],b.hand[0])+anim('y1',a.hand[1],b.hand[1])+anim('x2',a.hand2[0],b.hand2[0])+anim('y2',a.hand2[1],b.hand2[1]):'','#15233d',5);
  }
  return svg;
 }
