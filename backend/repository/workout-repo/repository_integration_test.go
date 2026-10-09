@@ -257,3 +257,42 @@ func TestSyncSnapshotRetainsPauseIntervalsAndProfileLabels(t *testing.T) {
 		t.Fatal("profile was converted into classifier label")
 	}
 }
+
+func TestCableStackRoundtripAndVolume(t *testing.T) {
+	_, repo, owner, other := setup(t)
+	for _, id := range []string{"00000000-0000-4000-8000-000000000006", "00000000-0000-4000-8000-000000000007", "00000000-0000-4000-8000-000000000008", "00000000-0000-4000-8000-000000000009"} {
+		t.Run(id, func(t *testing.T) {
+			w := sample(owner)
+			w.Exercises[0].ExerciseID = id
+			s := &w.Exercises[0].Sets[0]
+			load := "40.000"
+			s.LoadKG = &load
+			s.ImplementCount = 1
+			s.DetectedReps = 0
+			s.RepSource = "manual"
+			s.LabelSource = "manual"
+			s.RecognitionStatus = "manual"
+			saved, err := repo.Save(context.Background(), owner, w, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if saved.Revision != 1 {
+				t.Fatal(saved.Revision)
+			}
+			read, err := repo.Find(context.Background(), owner, w.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			result := read.Exercises[0].Sets[0]
+			if read.Exercises[0].ExerciseID != id || read.Exercises[0].Equipment != "machine" || result.ImplementCount != 1 || result.LoadKG == nil || *result.LoadKG != "40.000" || result.LabelSource != "manual" {
+				t.Fatalf("cable roundtrip: %+v", read)
+			}
+			if summary := read.Summary(); summary.KnownVolumeKG != "400.000" || !summary.VolumeComplete || summary.TotalReps != 10 {
+				t.Fatal(summary)
+			}
+			if _, err := repo.Find(context.Background(), other, w.ID); !errors.Is(err, entity.ErrNotFound) {
+				t.Fatalf("owner scope: %v", err)
+			}
+		})
+	}
+}

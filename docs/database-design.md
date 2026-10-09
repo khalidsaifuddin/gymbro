@@ -27,7 +27,7 @@ Master dapat berubah; schema `ref` tidak berarti immutable. Sesi login dan idemp
 
 Gunakan foreign key qualified lintas schema untuk transaksi/master. Terapkan unique `(workout_id, position)` dan `(workout_exercise_id, position)`, nonnegative reps/load/durations, serta revision monotonik. Setiap nested read/write harus diotorisasi melalui pemilik workout.
 
-Gunakan `NUMERIC(8,3)` untuk kg, UUID untuk ID perangkat, `TIMESTAMPTZ` untuk waktu kejadian, dan integer milliseconds untuk durasi. Beban kosong tetap NULL. `detected_reps`/label asli dipisahkan dari `reps`/jenis latihan final setelah koreksi. Summary dihitung dari set saat ini; volume bilateral = `load_kg × implement_count × reps`. Bodyweight tanpa beban eksternal tidak diperkirakan volumenya; beban belum diisi ditampilkan sebagai data belum lengkap.
+Gunakan `NUMERIC(8,3)` untuk kg, UUID untuk ID perangkat, `TIMESTAMPTZ` untuk waktu kejadian, dan integer milliseconds untuk durasi. Beban kosong tetap NULL. `detected_reps`/label asli dipisahkan dari `reps`/jenis latihan final setelah koreksi. Summary dihitung dari set saat ini; volume bilateral = `load_kg × implement_count × reps`. Dua dumbbell memakai implement count 2; empat cable bilateral dengan satu weight stack memakai implement count 1. Bodyweight tanpa beban eksternal tidak diperkirakan volumenya; beban belum diisi ditampilkan sebagai data belum lengkap.
 
 Indeks awal: workout per user/waktu mulai, unique posisi nested, session per user/expiry, dan mutation composite primary key. Tambahkan indeks berdasarkan query dan bukti kebutuhan.
 
@@ -50,3 +50,5 @@ Log tidak menjadi source of truth. Hindari FK log yang memblokir penghapusan aku
 ## GORM dan migration
 
 Gunakan `TableName()` qualified, misalnya `ref.exercises` dan `public.workouts`, serta qualified SQL. Jangan mengandalkan `search_path` atau AutoMigrate untuk perubahan produksi. Migration berversi diuji setelah tes integrasi RED dibuat.
+
+Migration 004 menambah empat latihan cable dan metadata aset pada `ref`, tanpa perubahan struktur `public`/`log` atau checksum migrations 001–003. UUID lima master lama tetap sama. Upgrade dari database yang sudah berisi workout dan auth session diuji pada PostgreSQL nyata; lihat `validation-stage-8.md`.

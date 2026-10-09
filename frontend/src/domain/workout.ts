@@ -1,5 +1,6 @@
 import {validateSnapshot} from './workout-snapshot';
-export type ExerciseId = 'squat' | 'push-up' | 'dumbbell-curl' | 'machine-shoulder-press' | 'bench-press';
+export type {ExerciseId} from './exercises';
+import {exerciseCatalog,type ExerciseId} from './exercises';
 export type Phase = 'ready' | 'peak' | 'moving';
 export type Observation = {
   exercise: ExerciseId | null;
@@ -76,7 +77,7 @@ export class WorkoutSession {
     const id=this.options.idFactory(), now=this.options.clock();
     this.endSet();
     this.sets.push({id,exercise,reps,detectedReps:0,origin:'manual',startedAt:now,endedAt:now,lastRepAt:now,
-      loadKg:loadKg===null?null:Math.round(loadKg*1000)/1000,implementCount:exercise==='dumbbell-curl'?2:1,
+      loadKg:loadKg===null?null:Math.round(loadKg*1000)/1000,implementCount:exerciseCatalog[exercise].implementCount,
       sourceIds:[id],loadEdited:true,labelSource:'manual',rawExercise:null});
     return id;
   }
@@ -108,7 +109,7 @@ export class WorkoutSession {
         if (!this.current) {
           const id = this.options.idFactory();
           this.current = { id, exercise, detectedReps: 0, origin: 'automatic', reps: 0, startedAt: this.anchor.at,
-            endedAt: null, lastRepAt: now, loadKg: null, implementCount: exercise === 'dumbbell-curl' ? 2 : 1, sourceIds: [id],labelSource:observation.labelSource??'automatic',rawExercise:observation.labelSource==='profile'?null:exercise };
+            endedAt: null, lastRepAt: now, loadKg: null, implementCount: exerciseCatalog[exercise].implementCount, sourceIds: [id],labelSource:observation.labelSource??'automatic',rawExercise:observation.labelSource==='profile'?null:exercise };
           this.sets.push(this.current);
         }
         if(this.current.labelSource!==(observation.labelSource??'automatic')){this.current.labelSource='mixed';this.current.rawExercise=null;}
@@ -242,7 +243,7 @@ export class WorkoutSession {
       const sources = set.mergedFrom.map(source => this.volume(source));
       return { knownKg: sources.reduce((n, source) => n + source.knownKg, 0), complete: sources.every(source => source.complete) };
     }
-    return { knownKg: 0, complete: set.reps === 0 || set.exercise === 'squat' || set.exercise === 'push-up' };
+    return { knownKg: 0, complete: set.reps === 0 || exerciseCatalog[set.exercise].equipment === 'bodyweight' };
   }
 
   private pausedBetween(start: number, end: number): number {

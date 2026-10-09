@@ -59,7 +59,7 @@ func TestHTTPAuthIsolationStrictJSONAndCorrectedHistory(t *testing.T) {
 		t.Fatal("catalogue", catalogue.Code)
 	}
 	var list []repository.Exercise
-	if err = json.Unmarshal(catalogue.Body.Bytes(), &list); err != nil || len(list) != 5 || len(list[0].Assets) != 1 {
+	if err = json.Unmarshal(catalogue.Body.Bytes(), &list); err != nil || len(list) != 9 || len(list[0].Assets) != 1 {
 		t.Fatal("catalogue payload", err)
 	}
 	if w := request("GET", "/api/v1/workouts", "", "", "", ""); w.Code != 401 {

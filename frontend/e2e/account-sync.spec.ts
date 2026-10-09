@@ -1,4 +1,5 @@
 import {test,expect,type Page} from '@playwright/test';
+import {cableExercises,exerciseCatalog} from '../src/domain/exercises';
 async function manual(page:Page,reps='10',kg='40'){
  await page.getByLabel('Latihan untuk set manual').selectOption('bench-press');await page.getByLabel('Reps manual',{exact:true}).fill(reps);await page.getByLabel('Beban kg',{exact:true}).fill(kg);await page.getByRole('button',{name:'Catat set manual',exact:true}).click();await page.getByRole('button',{name:'Selesaikan workout',exact:true}).click();await expect(page.getByText('Tersimpan di perangkat',{exact:true})).toBeVisible();
 }
@@ -59,4 +60,16 @@ test('merged unequal loads and original source timestamps survive PostgreSQL and
  await page.getByRole('button',{name:'Mode log',exact:true}).click();await page.getByLabel('Gabung set 1 Flat barbell bench press').check();await page.getByLabel('Gabung set 2 Flat barbell bench press').check();await page.getByRole('button',{name:'Gabungkan set terpilih',exact:true}).click();await page.getByRole('button',{name:'Selesaikan workout',exact:true}).click();await expect.poll(async()=>(await history(page))[0]?.status).toBe('completed');
  const rows=await history(page);expect(rows[0].exercises[0].sets).toHaveLength(1);const sources=rows[0].exercises[0].sets[0].merged_from;expect(sources).toHaveLength(2);expect(sources.map((s:any)=>Number(s.load_kg))).toEqual([40,50]);expect(sources.every((s:any)=>s.source_started_at&&s.source_last_rep_at)).toBe(true);
  const other=await browser.newContext();await other.addCookies([{name:'fixture_subject',value:'fixture-merge',url:'http://127.0.0.1:8094'}]);const p=await other.newPage();await p.goto('http://127.0.0.1:8093');await login(p);await p.getByRole('button',{name:'Muat riwayat akun',exact:true}).click();await p.getByRole('button',{name:'Lihat workout',exact:true}).first().click();await expect(p.getByText('Volume diketahui: 800 kg',{exact:true})).toBeVisible();await expect(p.getByText('Total reps: 18',{exact:true})).toBeVisible();await other.close();
+});
+
+test('four bilateral cable exercises sync one-stack volume and retain all labels across browsers',async({page,context,browser})=>{
+ await context.addCookies([{name:'fixture_subject',value:'fixture-cable',url:'http://127.0.0.1:8094'}]);await page.goto('/');await login(page);
+ for(const id of cableExercises){await page.getByLabel('Latihan untuk set manual').selectOption(id);await page.getByLabel('Reps manual',{exact:true}).fill('10');await page.getByLabel('Beban kg',{exact:true}).fill('40');await page.getByRole('button',{name:'Catat set manual',exact:true}).click();}
+ await page.getByRole('button',{name:'Selesaikan workout',exact:true}).click();await expect.poll(async()=>(await history(page))[0]?.status).toBe('completed');
+ const rows=await history(page);expect(rows).toHaveLength(1);expect(rows[0].exercises.map((e:any)=>e.exercise_id)).toEqual(cableExercises.map(id=>exerciseCatalog[id].uuid));
+ for(const e of rows[0].exercises){expect(e.sets).toHaveLength(1);expect(Number(e.sets[0].load_kg)).toBe(40);expect(e.sets[0].implement_count).toBe(1);expect(e.sets[0].label_source).toBe('manual');}
+ const catalogue=await page.request.get('/api/v1/exercises');expect(await catalogue.json()).toHaveLength(9);
+ const other=await browser.newContext();await other.addCookies([{name:'fixture_subject',value:'fixture-cable',url:'http://127.0.0.1:8094'}]);const p=await other.newPage();await p.goto('http://127.0.0.1:8093');await login(p);await p.getByRole('button',{name:'Muat riwayat akun',exact:true}).click();await p.getByRole('button',{name:'Lihat workout',exact:true}).first().click();
+ await expect(p.getByText('Total set: 4',{exact:true})).toBeVisible();await expect(p.getByText('Total reps: 40',{exact:true})).toBeVisible();await expect(p.getByText('Volume diketahui: 1600 kg',{exact:true})).toBeVisible();
+ await p.getByRole('button',{name:'Mode log',exact:true}).click();for(const id of cableExercises)await expect(p.getByRole('heading',{name:exerciseCatalog[id].label,exact:true})).toBeVisible();await other.close();
 });

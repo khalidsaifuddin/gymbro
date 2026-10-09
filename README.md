@@ -2,11 +2,13 @@
 
 Rancangan aplikasi workout berbasis kamera: Go clean architecture untuk backend, Expo/React Native Web untuk frontend pertama, lalu iOS/Android. Video diproses di perangkat; backend menyimpan hasil latihan.
 
-Status: implementasi web runnable dengan deteksi MediaPipe lokal, mode kamera/log, koreksi/merge, summary, IndexedDB/recovery, cache offline, video opsional lokal, lima SVG, PostgreSQL tiga schema, API, dan durable sync akun. Login Google eksternal memerlukan konfigurasi OAuth; test akun memakai issuer fixture bertanda tangan dan PostgreSQL nyata. Live testing/akurasi dilakukan setelah MVP runnable localhost; deployment/native menyusul. Lihat laporan validasi tahap 5 untuk batas bukti.
+Status: implementasi web runnable dengan deteksi MediaPipe lokal, mode kamera/log, koreksi/merge, summary, IndexedDB/recovery, cache offline, video opsional lokal, sembilan SVG, PostgreSQL tiga schema, API, dan durable sync akun. Login Google eksternal memerlukan konfigurasi OAuth; test akun memakai issuer fixture bertanda tangan dan PostgreSQL nyata. Live testing/akurasi dilakukan setelah MVP runnable localhost; deployment/native menyusul. Lihat laporan validasi tahap 5 untuk batas bukti.
 
 Panduan instalasi, startup, OAuth, tes, dan kelanjutan Codex CLI: [localhost-guide.md](docs/localhost-guide.md).
 
 Tahap 7 menyediakan pilihan sudut kamera yang terkunci selama sesi dan pulih setelah reload, serta side tracking untuk profil samping/diagonal. Akurasi tiap sudut belum divalidasi pada workout nyata; lihat [validation-stage-7.md](docs/validation-stage-7.md).
+
+Tahap 8 menambah lat pulldown ke depan dada, seated cable row, rope face pull, dan straight-arm cable pulldown bilateral; total sembilan gerakan. Semua cable memakai satu weight stack dan satu siklus kedua tangan untuk satu rep. [Plan tahap 8](docs/implementation-stage-8.md) dan [hasil validasi](docs/validation-stage-8.md) memisahkan hasil tes otomatis dari evaluasi kamera nyata yang belum dilakukan.
 
 ## Mulai dari dokumen
 

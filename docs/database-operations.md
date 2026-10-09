@@ -35,7 +35,7 @@ go run ./cmd/migrate --operation status
 go run ./cmd/partitions --month 2043-01 --count 2
 ```
 
-Up repeatable; versi/checksum tercatat di public.schema_migrations. Jangan mengedit SQL migration yang telah diterapkan; buat versi baru. Seed katalog/aset masuk migration pertama, dengan ID stabil dan metadata lisensi/checksum. Maintenance contoh di atas diuji pada database disposable; pada runtime gunakan bulan UTC sekarang/default, dengan current dan next month disiapkan lebih awal.
+Up repeatable; versi/checksum tercatat di public.schema_migrations. Jangan mengedit SQL migration yang telah diterapkan; buat versi baru. Lima seed katalog/aset awal masuk migration pertama; migration 004 menambah empat latihan cable dan aset, dengan ID stabil dan metadata lisensi/checksum. Maintenance contoh di atas diuji pada database disposable; pada runtime gunakan bulan UTC sekarang/default, dengan current dan next month disiapkan lebih awal.
 
 Partisi default menjaga event saat partisi khusus belum ada. Monitor `SELECT count(*) FROM log.workout_events_default` (dan auth_events_default/sync_events_default); maintenance memindahkan overlap secara atomic. Tidak ada retention deletion otomatis. Jangan menghapus state auth/idempotency saat partisi log kedaluwarsa.
 
@@ -49,3 +49,5 @@ go run ./cmd/migrate --operation up
 ```
 
 Runner menolak down pada nama database yang tidak berawalan `gymbro_test_`. Rollback menghapus data database tes. Recovery produksi memakai strategi backup/migration forward yang ditinjau ketika deployment diminta, bukan command ini.
+
+Down migration 004 mempertahankan foreign key: jika workout masih merujuk empat master cable, rollback ditolak dan transaksinya tidak diterapkan. Pengujian reinstall menggunakan DB disposable fresh tanpa referensi workout cable. Untuk database development dengan history, gunakan migration up; jangan menghapus master yang masih dipakai.

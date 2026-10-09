@@ -1,15 +1,17 @@
 import type {ExerciseId} from '../domain/workout';
+import {exerciseCatalog} from '../domain/exercises';
 import type {CameraView} from '../domain/camera-view';
 export const cameraViewLabels:Record<CameraView,string>={
   auto:'Panduan latihan (default)',front:'Depan',back:'Belakang',
   'front-left':'Kiri depan','front-right':'Kanan depan','rear-left':'Kiri belakang','rear-right':'Kanan belakang',
   'side-left':'Samping kiri','side-right':'Samping kanan',
 };
-export const exerciseLabels: Record<ExerciseId,string>={
-  squat:'Squat', 'push-up':'Push-up','dumbbell-curl':'Dumbbell curl',
-  'machine-shoulder-press':'Seated machine shoulder press','bench-press':'Flat barbell bench press',
-};
+export const exerciseLabels=Object.fromEntries(Object.entries(exerciseCatalog).map(([id,e])=>[id,e.label])) as Record<ExerciseId,string>;
 export const cameraGuides:Record<ExerciseId,string>={
+  'lat-pulldown':'Kamera dari samping menyerong. Pastikan kedua bahu, siku, tangan, pinggul, lutut dan pergelangan kaki terlihat dalam posisi duduk. Tarik ke depan dada.',
+  'seated-cable-row':'Kamera dari samping menyerong. Pastikan kedua bahu, siku, tangan, pinggul, lutut dan pergelangan kaki terlihat. Tetap duduk dan tarik ke torso.',
+  'face-pull':'Kamera dari depan menyerong. Pastikan wajah, kedua bahu, siku, tangan, pinggul, lutut dan pergelangan kaki terlihat. Tarik rope ke wajah dengan kedua tangan.',
+  'straight-arm-pulldown':'Kamera dari samping menyerong. Pastikan kedua bahu, siku, tangan, pinggul, lutut dan pergelangan kaki terlihat dalam posisi berdiri; tangan bergerak ke pinggul.',
   squat:'Kamera dari samping agak menyerong. Pastikan kedua bahu, pinggul, lutut, dan pergelangan kaki terlihat.',
   'push-up':'Kamera dari samping. Pastikan bahu, siku, pergelangan tangan, dan pinggul terlihat; tubuh horizontal di atas lantai.',
   'dumbbell-curl':'Kamera dari depan agak menyerong. Pastikan kedua bahu, siku, pergelangan tangan, dan pinggul terlihat; gerakkan kedua lengan serempak.',
@@ -17,6 +19,10 @@ export const cameraGuides:Record<ExerciseId,string>={
   'bench-press':'Kamera dari samping bangku. Pastikan bahu, siku, pergelangan tangan, dan pinggul terlihat; hindari bar atau alat menutupi sendi.',
 };
 const visibilityGuides:Record<ExerciseId,string>={
+  'lat-pulldown':'Kedua bahu, siku, tangan, pinggul, lutut dan pergelangan kaki harus terlihat. Duduk dan tarik ke depan dada, bukan belakang leher.',
+  'seated-cable-row':'Kedua bahu, siku, tangan, pinggul, lutut dan pergelangan kaki harus terlihat dalam posisi duduk. Tarik ke torso dengan kedua tangan.',
+  'face-pull':'Wajah serta kedua bahu, siku, tangan, pinggul, lutut dan pergelangan kaki harus terlihat. Berdiri dan tarik rope ke wajah.',
+  'straight-arm-pulldown':'Kedua bahu, siku, tangan, pinggul, lutut dan pergelangan kaki harus terlihat. Berdiri dan gerakkan tangan ke pinggul dengan siku relatif lurus.',
   squat:'Pastikan bahu, pinggul, lutut, dan pergelangan kaki pada sisi yang dipantau terlihat.',
   'push-up':'Pastikan bahu, siku, pergelangan tangan, dan pinggul pada sisi yang dipantau terlihat; tubuh horizontal di atas lantai.',
   'dumbbell-curl':'Pastikan kedua bahu, siku, pergelangan tangan, dan pinggul terlihat; kedua lengan bergerak serempak.',

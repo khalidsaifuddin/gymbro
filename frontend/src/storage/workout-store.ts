@@ -1,5 +1,6 @@
 import type {ExerciseId,SessionSnapshot} from '../domain/workout';
 import {validateSnapshot} from '../domain/workout-snapshot';
+import {exerciseIds} from '../domain/exercises';
 import {isCameraView,type CameraView} from '../domain/camera-view';
 
 export type WorkoutPreferences={
@@ -8,7 +9,7 @@ export type WorkoutPreferences={
  cameraView?:CameraView;
 };
 export type LocalWorkout={id:string;revision:number;snapshot:SessionSnapshot;preferences:WorkoutPreferences};
-const exercises=['squat','push-up','dumbbell-curl','machine-shoulder-press','bench-press'];
+const exercises:readonly string[]=exerciseIds;
 function validateRecord(value:LocalWorkout):LocalWorkout {
  const fail=():never=>{throw new Error('Invalid local workout record');};
  if(!value||typeof value.id!=='string'||!value.id||!Number.isSafeInteger(value.revision)||value.revision<0||

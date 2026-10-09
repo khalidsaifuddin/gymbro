@@ -22,16 +22,16 @@ func TestFreshSchemasAndRepeatableSeed(t *testing.T) {
 		}
 	}
 	var count int64
-	if err := db.Raw(`SELECT count(*) FROM ref.exercises`).Scan(&count).Error; err != nil || count != 5 {
+	if err := db.Raw(`SELECT count(*) FROM ref.exercises`).Scan(&count).Error; err != nil || count != 9 {
 		t.Fatalf("exercise seed: %d, %v", count, err)
 	}
-	if err := db.Raw(`SELECT count(*) FROM ref.exercise_assets WHERE license='CC-BY-4.0' AND mime_type='image/svg+xml'`).Scan(&count).Error; err != nil || count != 5 {
+	if err := db.Raw(`SELECT count(*) FROM ref.exercise_assets WHERE license='CC-BY-4.0' AND mime_type='image/svg+xml'`).Scan(&count).Error; err != nil || count != 9 {
 		t.Fatalf("asset seed: %d, %v", count, err)
 	}
 	if err := Up(db); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Raw(`SELECT count(*) FROM ref.exercises`).Scan(&count).Error; err != nil || count != 5 {
+	if err := db.Raw(`SELECT count(*) FROM ref.exercises`).Scan(&count).Error; err != nil || count != 9 {
 		t.Fatalf("repeatable seed: %d, %v", count, err)
 	}
 }
@@ -171,6 +171,103 @@ func TestUpgradeKeepsExistingWorkoutAndBackfillsSnapshotColumns(t *testing.T) {
 	}
 	if err := db.Raw(`SELECT id,revision,captured_at,pause_intervals::text FROM public.workouts WHERE id=?`, wid).Scan(&row).Error; err != nil || row.ID != wid || row.Revision != 7 || row.CapturedAt.IsZero() || row.PauseIntervals != "[]" {
 		t.Fatalf("upgrade lost/backfill data: %+v %v", row, err)
+	}
+	if err := Up(db); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCableCatalogueUpgradePreservesExistingDataAndLedger(t *testing.T) {
+	db := testdb.New(t)
+	if err := db.Exec(`CREATE TABLE public.schema_migrations(version INTEGER PRIMARY KEY,name TEXT NOT NULL,sha256 TEXT NOT NULL,applied_at TIMESTAMPTZ NOT NULL DEFAULT now())`).Error; err != nil {
+		t.Fatal(err)
+	}
+	hashes := make(map[int]string)
+	for i, file := range []string{"sql/001_schema.up.sql", "sql/002_activity.up.sql", "sql/003_sync_snapshot.up.sql"} {
+		body, err := scripts.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = db.Exec(string(body)).Error; err != nil {
+			t.Fatal(err)
+		}
+		hashes[i+1] = fmt.Sprintf("%x", sha256.Sum256(body))
+		if err = db.Exec(`INSERT INTO public.schema_migrations(version,name,sha256) VALUES(?,?,?)`, i+1, file, hashes[i+1]).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	owner, wid, eid, sid, auth := "00000000-0000-4000-8000-000000000021", "00000000-0000-4000-8000-000000000022", "00000000-0000-4000-8000-000000000023", "00000000-0000-4000-8000-000000000024", "00000000-0000-4000-8000-000000000025"
+	queries := []struct {
+		sql  string
+		args []any
+	}{
+		{`INSERT INTO ref.users(id,google_sub,display_name) VALUES(?,'cable-upgrade','Fixture')`, []any{owner}},
+		{`INSERT INTO public.workouts(id,user_id,started_at,status,revision) VALUES(?,?,now(),'active',7)`, []any{wid, owner}},
+		{`INSERT INTO public.workout_exercises(id,workout_id,exercise_id,position) VALUES(?,?,'00000000-0000-4000-8000-000000000005',0)`, []any{eid, wid}},
+		{`INSERT INTO public.workout_sets(id,workout_exercise_id,position,detected_reps,reps,rep_source,started_at,last_rep_at,load_kg,source_ids) VALUES(?,?,0,8,10,'mixed',now(),now(),40.125,ARRAY[?]::uuid[])`, []any{sid, eid, sid}},
+		{`INSERT INTO public.auth_sessions(id,user_id,token_hash,csrf_hash,expires_at) VALUES(?,?,decode(repeat('ab',32),'hex'),decode(repeat('cd',32),'hex'),now()+interval '1 day')`, []any{auth, owner}},
+	}
+	for _, q := range queries {
+		if err := db.Exec(q.sql, q.args...).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	var before, after string
+	const snapshot = `SELECT row_to_json(w)::text || row_to_json(e)::text || row_to_json(s)::text || row_to_json(a)::text FROM public.workouts w JOIN public.workout_exercises e ON e.workout_id=w.id JOIN public.workout_sets s ON s.workout_exercise_id=e.id JOIN public.auth_sessions a ON a.user_id=w.user_id WHERE w.id=?`
+	if err := db.Raw(snapshot, wid).Scan(&before).Error; err != nil {
+		t.Fatal(err)
+	}
+	for n := 0; n < 2; n++ {
+		if err := Up(db); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := db.Raw(snapshot, wid).Scan(&after).Error; err != nil || before != after {
+		t.Fatalf("existing data changed: %v", err)
+	}
+	for version, hash := range hashes {
+		var actual string
+		if err := db.Raw(`SELECT sha256 FROM public.schema_migrations WHERE version=?`, version).Scan(&actual).Error; err != nil || actual != hash {
+			t.Fatalf("ledger changed: %d %v", version, err)
+		}
+	}
+	var exercises, assets int64
+	db.Raw(`SELECT count(*) FROM ref.exercises`).Scan(&exercises)
+	db.Raw(`SELECT count(*) FROM ref.exercise_assets WHERE license='CC-BY-4.0'`).Scan(&assets)
+	if exercises != 9 || assets != 9 {
+		t.Fatalf("upgraded catalogue: %d exercises/%d assets", exercises, assets)
+	}
+	for i, slug := range []string{"lat-pulldown", "seated-cable-row", "face-pull", "straight-arm-pulldown"} {
+		var row struct{ ID, Equipment, LoadConvention string }
+		if err := db.Raw(`SELECT id,equipment,load_convention FROM ref.exercises WHERE slug=?`, slug).Scan(&row).Error; err != nil || row.ID != fmt.Sprintf("00000000-0000-4000-8000-%012d", i+6) || row.Equipment != "machine" || row.LoadConvention != "selected-machine-kg" {
+			t.Fatalf("cable metadata %s: %+v %v", slug, row, err)
+		}
+	}
+}
+
+func TestCableRollbackRefusesReferencedMastersAtomically(t *testing.T) {
+	db := testdb.New(t)
+	if err := Up(db); err != nil {
+		t.Fatal(err)
+	}
+	for _, sql := range []string{
+		`INSERT INTO ref.users(id,google_sub,display_name) VALUES('10000000-0000-4000-8000-000000000031','cable-rollback','Fixture')`,
+		`INSERT INTO public.workouts(id,user_id,started_at,status) VALUES('20000000-0000-4000-8000-000000000031','10000000-0000-4000-8000-000000000031',now(),'active')`,
+		`INSERT INTO public.workout_exercises(id,workout_id,exercise_id,position) VALUES('30000000-0000-4000-8000-000000000031','20000000-0000-4000-8000-000000000031','00000000-0000-4000-8000-000000000006',0)`,
+	} {
+		if err := db.Exec(sql).Error; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := DownDisposable(db); err == nil {
+		t.Fatal("rollback removed a referenced cable master")
+	}
+	var assets, versions, workouts int64
+	db.Raw(`SELECT count(*) FROM ref.exercise_assets`).Scan(&assets)
+	db.Raw(`SELECT count(*) FROM public.schema_migrations`).Scan(&versions)
+	db.Raw(`SELECT count(*) FROM public.workouts`).Scan(&workouts)
+	if assets != 9 || versions != 4 || workouts != 1 {
+		t.Fatalf("rollback was partial: assets=%d versions=%d workouts=%d", assets, versions, workouts)
 	}
 	if err := Up(db); err != nil {
 		t.Fatal(err)

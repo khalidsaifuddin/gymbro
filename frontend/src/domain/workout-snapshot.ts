@@ -1,4 +1,5 @@
 import type {SessionSnapshot,WorkoutSet} from './workout';
+import {isExerciseId} from './exercises';
 
 // Strict versioned boundary: persisted records may be corrupt or edited outside the app.
 export function validateSnapshot(value:unknown):SessionSnapshot {
@@ -17,7 +18,7 @@ export function validateSnapshot(value:unknown):SessionSnapshot {
   const set=(v:unknown,depth=0):void=>{
     if(depth>20)return fail();
     const r=object(v,['id','exercise','detectedReps','origin','reps','startedAt','endedAt','lastRepAt','loadKg','implementCount','sourceIds','mergedFrom','loadEdited','labelSource','rawExercise']);
-    if(typeof r.id!=='string'||!r.id||!['squat','push-up','dumbbell-curl','machine-shoulder-press','bench-press'].includes(String(r.exercise))||
+    if(typeof r.id!=='string'||!r.id||!isExerciseId(r.exercise)||
       !['automatic','manual','mixed'].includes(String(r.origin))||!count(r.reps)||!count(r.detectedReps)||
       !time(r.startedAt)||r.startedAt<start||!time(r.lastRepAt)||r.lastRepAt<r.startedAt||r.lastRepAt>end||
       !(r.endedAt===null||(time(r.endedAt)&&r.endedAt>=r.lastRepAt&&r.endedAt<=end))||
@@ -26,7 +27,7 @@ export function validateSnapshot(value:unknown):SessionSnapshot {
       !Array.isArray(r.sourceIds)||!r.sourceIds.length||r.sourceIds.some(id=>typeof id!=='string'||!id)||
       (r.loadEdited!==undefined&&typeof r.loadEdited!=='boolean')||
       (r.labelSource!==undefined&&!['automatic','profile','manual','mixed'].includes(String(r.labelSource)))||
-      (r.rawExercise!==undefined&&r.rawExercise!==null&&!['squat','push-up','dumbbell-curl','machine-shoulder-press','bench-press'].includes(String(r.rawExercise)))||
+      (r.rawExercise!==undefined&&r.rawExercise!==null&&!isExerciseId(r.rawExercise))||
       (r.rawExercise!=null&&r.labelSource!=='automatic'))return fail();
     if(r.mergedFrom!==undefined){if(!Array.isArray(r.mergedFrom)||r.mergedFrom.length<2)return fail();r.mergedFrom.forEach(x=>set(x,depth+1));}
   };

@@ -1,7 +1,8 @@
 import {test,expect} from '@playwright/test';
-test('five original SVG guides render, animate continuously and provide start/end pose diagrams',async({page})=>{
+import {exerciseIds} from '../src/domain/exercises';
+test('nine original SVG guides render, animate continuously and provide start/end pose diagrams',async({page})=>{
  await page.goto('http://127.0.0.1:8081/');
- for(const id of ['squat','push-up','dumbbell-curl','machine-shoulder-press','bench-press']){
+ for(const id of exerciseIds){
   await page.getByLabel('Profil kamera').selectOption(id);
   const guide=page.locator('object[data-testid="exercise-animation"]');
   await expect(guide).toHaveAttribute('data',`/exercises/${id}.svg`);
