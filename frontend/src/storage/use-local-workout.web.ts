@@ -3,7 +3,7 @@ import {WorkoutSession} from '../domain/workout';
 import {type LocalWorkout,type WorkoutPreferences} from './workout-store';
 import {SyncStore} from '../sync/sync-store';
 
-export const defaultPreferences=():WorkoutPreferences=>({profile:'auto',cameraView:'auto',restSeconds:{},manualExercise:'squat',manualReps:'10',manualLoad:''});
+export const defaultPreferences=():WorkoutPreferences=>({profile:'auto',cameraView:'auto',cameraViews:{},restSeconds:{},manualExercise:'squat',manualReps:'10',manualLoad:''});
 export function useLocalWorkout(owner:string|null=null) {
  const ownerRef=useRef(owner);ownerRef.current=owner;
  const workout=useRef<WorkoutSession|null>(null),preferences=useRef(defaultPreferences());

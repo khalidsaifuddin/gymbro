@@ -1,25 +1,25 @@
-import type { ExerciseId } from '../domain/workout';
+import type { SupportedExerciseId } from '../domain/exercises';
 import { PosePhaseAdapter, type PoseFrame, type PoseOptions, type PoseResult } from './pose-phase-adapter';
 
-import {exerciseIds as exercises} from '../domain/exercises';
+import {supportedExerciseIds as exercises} from '../domain/exercises';
 type Cycle={ready:boolean;peak:boolean};
 
 export class TemporalExerciseRecognizer {
-  private adapters=new Map<ExerciseId,PosePhaseAdapter>();
-  private cycles=new Map<ExerciseId,Cycle>();
-  private manual:ExerciseId|null=null;
-  private selected:ExerciseId|null=null;
+  private adapters=new Map<SupportedExerciseId,PosePhaseAdapter>();
+  private cycles=new Map<SupportedExerciseId,Cycle>();
+  private manual:SupportedExerciseId|null=null;
+  private selected:SupportedExerciseId|null=null;
 
   constructor(private options: Omit<PoseOptions,'exercise'> = {}) { this.reset(); }
 
-  selectManual(exercise: ExerciseId | null): void {
+  selectManual(exercise: SupportedExerciseId | null): void {
     this.manual=exercise; this.selected=null; this.reset();
   }
 
   process(frame: PoseFrame): PoseResult {
     if (this.manual) return this.adapters.get(this.manual)!.process(frame);
-    const results=new Map<ExerciseId,PoseResult>();
-    const completed:ExerciseId[]=[];
+    const results=new Map<SupportedExerciseId,PoseResult>();
+    const completed:SupportedExerciseId[]=[];
     for (const exercise of exercises) {
       const result=this.adapters.get(exercise)!.process(frame);
       results.set(exercise,result);

@@ -9,6 +9,36 @@ function record(id='workout-1'):LocalWorkout {
  return {id,revision:0,snapshot:session.exportSnapshot(),preferences:{profile:'auto',restSeconds:{},manualExercise:'squat',manualReps:'10',manualLoad:''}};
 }
 describe('durable guest workout storage',()=>{
+ it('stores separate camera views for squat and curl, allowing a new view after a completed set',async()=>{
+  const store=new WorkoutStore(new IDBFactory(),'test'),initial=record();
+  initial.preferences.cameraViews={squat:'side-left','dumbbell-curl':'front-right'};
+  const saved=await store.save(initial,0),changed=structuredClone(saved);
+  changed.preferences.cameraViews!['dumbbell-curl']='front-left';
+  const updated=await store.save(changed,1);
+  expect((await store.list())[0].preferences.cameraViews).toEqual({squat:'side-left','dumbbell-curl':'front-left'});
+  expect(updated.preferences.cameraViews?.squat).toBe('side-left');await store.close();
+ });
+ it('locks only the active exercise angle until its live set ends',async()=>{
+  const session=new WorkoutSession({clock:()=>100,idFactory:()=>crypto.randomUUID()});
+  for(const phase of ['ready','peak','ready'] as const)session.observe({exercise:'squat',visible:true,phase});
+  const store=new WorkoutStore(new IDBFactory(),'test');
+  const value=record();value.snapshot=session.exportSnapshot();value.preferences.cameraViews={squat:'side-left','dumbbell-curl':'front-right'};
+  const saved=await store.save(value,0),changed=structuredClone(saved);
+  changed.preferences.cameraViews!.squat='side-right';
+  await expect(store.save(changed,1)).rejects.toThrow(/active set/i);
+  changed.preferences.cameraViews!.squat='side-left';changed.preferences.cameraViews!['dumbbell-curl']='front-left';
+  expect((await store.save(changed,1)).preferences.cameraViews?.['dumbbell-curl']).toBe('front-left');
+  await store.close();
+ });
+ it('round-trips planned exercises without counting them as completed sets, while legacy preferences remain valid',async()=>{
+  const store=new WorkoutStore(new IDBFactory(),'test'),planned=record();
+  (planned.preferences as any).exercisePlan=[{exercise:'bench-press',targets:[{reps:8,loadKg:40}]}];
+  const saved=await store.save(planned,0);
+  expect((await store.list())[0].preferences).toEqual(saved.preferences);
+  expect((await store.list())[0].snapshot.sets).toHaveLength(1);
+  const legacy=record('legacy');await store.save(legacy,0);
+  expect((await store.list()).find(row=>row.id==='legacy')?.preferences.exercisePlan).toBeUndefined();await store.close();
+ });
  it('persists a selected camera view across reopen while accepting legacy records without it',async()=>{
   const factory=new IDBFactory(),a=new WorkoutStore(factory,'test');
   const selected=record('selected');selected.preferences.cameraView='rear-right';

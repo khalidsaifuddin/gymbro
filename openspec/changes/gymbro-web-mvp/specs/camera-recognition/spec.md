@@ -39,37 +39,42 @@ Aplikasi SHALL memberi panduan kamera sesuai latihan dan peringatan saat tubuh t
 - **WHEN** pandangan valid kembali setelah siklus terputus
 - **THEN** hitungan berlanjut dari hasil terverifikasi tanpa menghitung gerakan yang tidak terlihat
 
-### Requirement: Fixed camera position throughout the workout session
+#### Scenario: Responsive squat and bilateral curl
+- **WHEN** pengguna menyelesaikan siklus squat atau dumbbell curl bilateral dengan rentang sedang yang jelas pada pandangan valid
+- **THEN** satu rep dihitung setelah ready → peak → ready tanpa harus mencapai sudut ekstrem prototipe lama
+- **AND** jitter di dekat satu ambang, gerakan parsial, curl satu tangan, dan siklus yang terputus tidak menambah rep
 
-Aplikasi SHALL memberi instruksi agar posisi fisik kamera tetap selama seluruh sesi. Perubahan posisi dilakukan pada sesi baru. Dukungan otomatis suatu sudut SHALL hanya diklaim setelah kombinasi sudut/latihan tersebut dievaluasi; pose estimation saja bukan bukti dukungan.
+### Requirement: Camera position by exercise
 
-#### Scenario: Recover the fixed camera view
+Aplikasi SHALL menyimpan pilihan arah kamera per latihan dan mempertahankannya selama set latihan tersebut. Pengguna SHALL dapat mengubah arah setelah berpindah latihan atau sebelum set berikutnya; perubahan arah membuang siklus parsial dan tidak menghapus repetisi terverifikasi. Dukungan otomatis suatu sudut SHALL hanya diklaim setelah kombinasi sudut/latihan tersebut dievaluasi.
+
+#### Scenario: Recover exercise camera views
 - **WHEN** catatan sesi aktif dipulihkan setelah reload
-- **THEN** arah kamera lokal yang tersimpan tetap terkunci dan kamera diaktifkan kembali dari posisi semula
+- **THEN** pilihan arah setiap latihan tetap tersedia dan kamera memerlukan aktivasi kembali
 
-#### Scenario: Exercise changes at the same camera position
+#### Scenario: Exercise changes with a new camera position
 - **WHEN** pengguna mengganti latihan dalam sesi yang belum selesai
-- **THEN** posisi kamera tetap sama dan pencatatan manual tersedia jika pandangan tidak cukup untuk deteksi otomatis latihan berikutnya
+- **THEN** posisi untuk latihan berikutnya dapat dipilih tanpa mengubah posisi latihan sebelumnya
 
-#### Scenario: Position adjustment needs another session
-- **WHEN** pengguna memerlukan posisi kamera berbeda
-- **THEN** pengguna menyelesaikan sesi saat ini sebelum memulai sesi baru dengan posisi tersebut
+#### Scenario: Position adjustment during an active set
+- **WHEN** pengguna memerlukan posisi berbeda saat set aktif
+- **THEN** set harus diakhiri terlebih dahulu dan siklus parsial dibuang sebelum arah baru dipakai
 
 #### Scenario: Detected view interruption
 - **WHEN** gangguan pandangan terdeteksi ketika set berlangsung
 - **THEN** aplikasi membuang siklus parsial, mempertahankan reps terverifikasi, menghentikan hitungan dan penutupan set otomatis, serta meminta pemulihan pandangan dari posisi semula
 
-### Requirement: Local camera view selection and recovery
+### Requirement: Local exercise camera view selection and recovery
 
-Aplikasi SHALL menyediakan pilihan arah sebelum sesi dan menguncinya sampai sesi selesai, termasuk saat pause, istirahat dan pergantian latihan. Recovery lokal SHALL mempertahankan pilihan; catatan lama tanpa arah memakai panduan default yang terkunci.
+Aplikasi SHALL menyediakan pilihan arah pada setiap latihan yang mendukung kamera. Recovery lokal SHALL mempertahankan peta pilihan latihan; catatan lama dengan satu arah sesi memakai arah tersebut sebagai fallback awal, dan catatan tanpa arah memakai panduan default.
 
-#### Scenario: Select a direction before the workout
-- **WHEN** sesi belum dimulai
-- **THEN** pengguna dapat memilih depan, belakang, diagonal kiri/kanan depan/belakang, samping kiri/kanan, atau panduan latihan default
+#### Scenario: Select a direction before using an exercise camera
+- **WHEN** kamera latihan belum aktif
+- **THEN** pengguna dapat memilih depan, belakang, diagonal kiri/kanan depan/belakang, samping kiri/kanan, atau panduan latihan default untuk latihan itu
 
-#### Scenario: Change direction while paused
-- **WHEN** sesi telah dimulai dan sedang dijeda
-- **THEN** pilihan arah tetap terkunci sampai pengguna menyelesaikan sesi dan memulai workout baru
+#### Scenario: Change direction between sets
+- **WHEN** set telah selesai atau kamera dijeda tanpa set aktif
+- **THEN** pengguna dapat mengubah arah untuk latihan tersebut dan detektor baru tidak membawa fase parsial lama
 
 ### Requirement: Consistent visible-side tracking
 

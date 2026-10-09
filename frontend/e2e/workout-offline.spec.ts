@@ -1,15 +1,18 @@
 import {test,expect} from '@playwright/test';
+import {openAutomaticCamera,startEmptyWorkout} from './fixtures/workout-ui';
 test('cached app and model reload offline and preserve the guest workout',async({page,context})=>{
- await page.goto('http://127.0.0.1:8081/');
+ await page.goto('http://127.0.0.1:8081/');await startEmptyWorkout(page);
  await expect(page.getByText('Aplikasi dan model siap offline',{exact:true})).toBeVisible({timeout:30000});
  await page.getByLabel('Reps manual').fill('8');await page.getByRole('button',{name:'Catat set manual',exact:true}).click();
  await expect(page.getByText('Tersimpan di perangkat',{exact:true})).toBeVisible();
  await context.setOffline(true);await page.reload();
  await page.getByRole('button',{name:'Pulihkan sesi',exact:true}).click();
  await expect(page.getByText('Total reps: 8',{exact:true})).toBeVisible();
+ await openAutomaticCamera(page);
  await page.getByRole('button',{name:'Lanjutkan kamera',exact:true}).click();
  await expect(page.getByRole('button',{name:'Jeda kamera',exact:true})).toBeVisible({timeout:30000});
  await page.getByRole('button',{name:'Jeda kamera',exact:true}).click();
+ await page.getByRole('button',{name:'Back to workout',exact:true}).click();
  await page.getByRole('button',{name:'Lanjutkan workout manual',exact:true}).click();
  await page.getByLabel('Reps manual').fill('3');await page.getByRole('button',{name:'Catat set manual',exact:true}).click();
  await expect(page.getByText('Total reps: 11',{exact:true})).toBeVisible();

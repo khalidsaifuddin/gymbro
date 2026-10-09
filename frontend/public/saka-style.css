@@ -1,0 +1,1569 @@
+/* ============================================================
+   SAKA — tactical HUD style set
+   Cyberpunk terminal aesthetic: black canvas, single accent,
+   mono type, rounded-rect cards, invert fills, pill controls.
+   ============================================================ */
+
+:root {
+  /* ============================================================
+     THEME  — change scheme by overriding these 6 accent vars.
+     Everything downstream derives from them. Default = SAKA orange.
+     Swap with a theme class (.saka-theme-cyan) or [data-theme].
+     ============================================================ */
+  --saka-accent:        #F1521E;   /* primary (outlines, text)     */
+  --saka-accent-bright: #FF5A1F;   /* filled fill                  */
+  --saka-accent-dim:    #7a2c12;   /* grid lines, ghost strokes    */
+  --saka-accent-glow:   #ff6a2e;   /* hover / active               */
+  --saka-bg:            #050505;   /* near-black canvas            */
+  /* de-emphasized text — derived so it stays legible per theme    */
+  --saka-muted:         color-mix(in srgb, var(--saka-accent) 60%, #000);
+  --saka-success:       #3ddc84;
+  --saka-warning:       #ffbe4d;
+  --saka-danger:        #ff6b6b;
+  --saka-info:          #58a6ff;
+
+  /* ---- Derived color (usually leave alone) ---- */
+  --saka-bg-panel:      color-mix(in srgb, var(--saka-accent) 8%, var(--saka-bg));
+  --saka-bg-elevated:   color-mix(in srgb, var(--saka-accent) 12%, var(--saka-bg));
+  --saka-ink:           var(--saka-accent);   /* text on dark      */
+  --saka-ink-invert:    #0a0503;              /* text on fill      */
+  --saka-field-bg:      color-mix(in srgb, var(--saka-accent) 6%, var(--saka-bg));
+  --saka-field-focus:   color-mix(in srgb, var(--saka-accent) 14%, var(--saka-bg));
+  --saka-border-soft:   color-mix(in srgb, var(--saka-accent) 26%, var(--saka-bg));
+  --saka-shadow-lg:     0 24px 80px rgba(0,0,0,.55);
+
+  /* ---- Type ---- */
+  --saka-font: "Space Mono", "JetBrains Mono", "IBM Plex Mono",
+               ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --saka-tracking: 0.08em;
+  --saka-tracking-wide: 0.18em;
+  --saka-leading: 1.15;
+
+  /* ---- Shape ---- */
+  --saka-radius-sm: 8px;
+  --saka-radius:    14px;
+  --saka-radius-lg: 22px;
+  --saka-radius-pill: 999px;
+  --saka-border: 1.5px;
+  --saka-gap: 12px;
+
+  /* ---- Motion ---- */
+  --saka-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* ============================================================
+   THEME PRESETS
+   Apply to the .saka root:  <body class="saka saka-theme-cyan">
+   or via attribute:         <body class="saka" data-theme="green">
+   ============================================================ */
+.saka-theme-orange, [data-theme="orange"] {   /* default */
+  --saka-accent:#F1521E; --saka-accent-bright:#FF5A1F; --saka-accent-dim:#7a2c12;
+  --saka-accent-glow:#ff6a2e; --saka-bg:#050505;
+}
+.saka-theme-cyan, [data-theme="cyan"] {
+  --saka-accent:#22E0E0; --saka-accent-bright:#1FF5F5; --saka-accent-dim:#0e5c5c;
+  --saka-accent-glow:#5ff7f7; --saka-bg:#03080a;
+}
+.saka-theme-green, [data-theme="green"] {   /* neon green */
+  --saka-accent:#3BFF6A; --saka-accent-bright:#2BFF5E; --saka-accent-dim:#125c28;
+  --saka-accent-glow:#6dff92; --saka-bg:#020603;
+}
+.saka-theme-amber, [data-theme="amber"] {
+  --saka-accent:#FFB020; --saka-accent-bright:#FFC24A; --saka-accent-dim:#6b4a0e;
+  --saka-accent-glow:#ffca63; --saka-bg:#070502;
+}
+.saka-theme-magenta, [data-theme="magenta"] {
+  --saka-accent:#FF3DAE; --saka-accent-bright:#FF5FBF; --saka-accent-dim:#661a45;
+  --saka-accent-glow:#ff77c9; --saka-bg:#080406;
+}
+.saka-theme-violet, [data-theme="violet"] {
+  --saka-accent:#9D6BFF; --saka-accent-bright:#B487FF; --saka-accent-dim:#3d2a66;
+  --saka-accent-glow:#c3a1ff; --saka-bg:#050308;
+}
+
+/* ---- Base ---- */
+.saka {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top, color-mix(in srgb, var(--saka-accent) 10%, transparent), transparent 46%),
+    var(--saka-bg);
+  color: var(--saka-ink);
+  font-family: var(--saka-font);
+  font-size: 15px;
+  line-height: var(--saka-leading);
+  letter-spacing: var(--saka-tracking);
+  text-transform: uppercase;
+  -webkit-font-smoothing: antialiased;        /* readable at 100%  */
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body.saka { margin: 0; }
+.saka ::selection {
+  background: var(--saka-accent-bright);
+  color: var(--saka-ink-invert);
+}
+
+.saka :where(a) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.saka :where(button, input, select, textarea) {
+  font: inherit;
+}
+
+.saka :where(button, .saka-btn, .saka-tab, .saka-nav__item, .saka-tree summary, .saka-tree__node, .saka-list-item, .saka-page, .saka-breadcrumb__item, .saka-dropdown > summary, .saka-dropdown__trigger, .saka-dropdown__item, .saka-accordion > summary):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--saka-accent-glow);
+}
+
+.saka * { box-sizing: border-box; }
+
+/* ============================================================
+   LAYOUT / CONTENT PRIMITIVES
+   ============================================================ */
+.saka-stack { display: flex; flex-direction: column; gap: var(--saka-gap); }
+.saka-cluster { display: flex; flex-wrap: wrap; align-items: center; gap: var(--saka-gap); }
+.saka-split { display: flex; align-items: center; justify-content: space-between; gap: var(--saka-gap); }
+.saka-divider {
+  width: 100%;
+  height: 1px;
+  border: 0;
+  background: var(--saka-accent-dim);
+  opacity: .9;
+}
+.saka-kicker {
+  font-size: 10px;
+  letter-spacing: var(--saka-tracking-wide);
+  color: var(--saka-muted);
+}
+.saka-prose {
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.6;
+  color: var(--saka-muted);
+}
+.saka-prose :where(p) { margin: 0; }
+.saka-prose :where(p + p) { margin-top: 1em; }
+.saka-surface {
+  background: var(--saka-bg-panel);
+  border: var(--saka-border) solid var(--saka-accent-dim);
+  border-radius: var(--saka-radius);
+}
+
+/* ============================================================
+   CARDS  — the core unit. Outline by default, .is-filled inverts.
+   ============================================================ */
+.saka-card {
+  --_fg: var(--saka-accent);
+  --_bg: transparent;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  color: var(--_fg);
+  background: var(--_bg);
+  border: var(--saka-border) solid var(--saka-accent);
+  border-radius: var(--saka-radius);
+  transition: background .2s var(--saka-ease), color .2s var(--saka-ease);
+}
+
+.saka-card.is-filled {
+  --_fg: var(--saka-ink-invert);
+  --_bg: var(--saka-accent-bright);
+  border-color: var(--saka-accent-bright);
+}
+
+.saka-card.is-lg { border-radius: var(--saka-radius-lg); }
+
+/* vertically-set label (as in the badge stacks) */
+.saka-card.is-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  letter-spacing: var(--saka-tracking-wide);
+}
+
+/* ============================================================
+   BADGES  — small square status chips (2×2 grid in refs)
+   ============================================================ */
+.saka-badge-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--saka-gap);
+  align-items: start;
+}
+.saka-badge {
+  min-height: 64px;
+  padding: 10px 12px;
+  font-size: 11px;
+  letter-spacing: var(--saka-tracking-wide);
+  line-height: 1.35;
+  border: var(--saka-border) solid var(--saka-accent);
+  border-radius: var(--saka-radius-sm);
+  color: var(--saka-accent);
+}
+.saka-badge.is-filled {
+  background: var(--saka-accent-bright);
+  color: var(--saka-ink-invert);
+  border-color: var(--saka-accent-bright);
+}
+
+/* ============================================================
+   BUTTONS / PILLS
+   ============================================================ */
+.saka-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: var(--saka-tracking-wide);
+  text-transform: uppercase;
+  color: var(--saka-accent);
+  background: transparent;
+  border: var(--saka-border) solid var(--saka-accent);
+  border-radius: var(--saka-radius-pill);
+  cursor: pointer;
+  transition: all .18s var(--saka-ease);
+}
+.saka-btn:hover {
+  color: var(--saka-ink-invert);
+  background: var(--saka-accent-glow);
+  border-color: var(--saka-accent-glow);
+}
+.saka-btn:focus-visible {
+  box-shadow: 0 0 0 2px var(--saka-accent-glow);
+}
+.saka-btn:disabled {
+  cursor: not-allowed;
+  opacity: .4;
+  pointer-events: none;
+}
+.saka-btn.is-filled {
+  color: var(--saka-ink-invert);
+  background: var(--saka-accent-bright);
+  border-color: var(--saka-accent-bright);
+}
+.saka-btn.is-filled:hover { background: var(--saka-accent-glow); }
+
+/* ---- variants ---- */
+.saka-btn--ghost {                 /* no border, text only */
+  border-color: transparent;
+  background: transparent;
+}
+.saka-btn--ghost:hover {
+  background: color-mix(in srgb, var(--saka-accent) 16%, transparent);
+  color: var(--saka-accent);
+  border-color: transparent;
+}
+.saka-btn--danger {                /* filled attention */
+  color: var(--saka-ink-invert);
+  background: var(--saka-accent-bright);
+  border-color: var(--saka-accent-bright);
+}
+.saka-btn--block { display: flex; width: 100%; justify-content: center; }
+
+/* ---- sizes ---- */
+.saka-btn--xs { padding: 5px 12px;  font-size: 10px; }
+.saka-btn--sm { padding: 7px 16px;  font-size: 12px; }
+.saka-btn--lg { padding: 14px 28px; font-size: 15px; }
+.saka-btn--xl { padding: 18px 36px; font-size: 17px; }
+
+/* ---- icon button (square) ---- */
+.saka-btn--icon {
+  padding: 0;
+  width: 40px; height: 40px;
+  justify-content: center;
+  border-radius: var(--saka-radius-sm);
+}
+.saka-btn--icon.saka-btn--sm { width: 32px; height: 32px; }
+.saka-btn--icon.saka-btn--lg { width: 48px; height: 48px; }
+.saka-btn--icon.is-round { border-radius: var(--saka-radius-pill); }
+.saka-btn svg { width: 1.2em; height: 1.2em; display: block; }
+
+/* ---- icon wrapper ---- */
+.saka-icon {
+  width: 1em;
+  height: 1em;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+.saka-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.saka-icon--sm { width: .875em; height: .875em; }
+.saka-icon--lg { width: 1.25em; height: 1.25em; }
+
+/* ---- loading ---- */
+.saka-btn.is-loading { pointer-events: none; opacity: .7; }
+.saka-btn.is-loading::before {
+  content: "";
+  width: 1em; height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: saka-spin .7s linear infinite;
+}
+@keyframes saka-spin { to { transform: rotate(360deg); } }
+
+/* ---- spinner helper ---- */
+.saka-spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: saka-spin .7s linear infinite;
+}
+
+/* ---- button group (segmented, shared borders) ---- */
+.saka-btn-group { display: inline-flex; }
+.saka-btn-group .saka-btn { border-radius: 0; margin-left: calc(var(--saka-border) * -1); }
+.saka-btn-group .saka-btn:first-child {
+  border-top-left-radius: var(--saka-radius-pill);
+  border-bottom-left-radius: var(--saka-radius-pill);
+  margin-left: 0;
+}
+.saka-btn-group .saka-btn:last-child {
+  border-top-right-radius: var(--saka-radius-pill);
+  border-bottom-right-radius: var(--saka-radius-pill);
+}
+.saka-btn-group .saka-btn:hover,
+.saka-btn-group .saka-btn.is-filled { z-index: 1; }
+
+/* ============================================================
+   TABS
+   ============================================================ */
+.saka-tabs { display: flex; gap: 4px; border-bottom: var(--saka-border) solid var(--saka-accent-dim); }
+.saka-tab {
+  padding: 10px 18px;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: var(--saka-tracking-wide);
+  text-transform: uppercase;
+  color: var(--saka-muted);
+  background: transparent;
+  border: var(--saka-border) solid transparent;
+  border-bottom: none;
+  border-radius: var(--saka-radius-sm) var(--saka-radius-sm) 0 0;
+  cursor: pointer;
+  transition: color .15s var(--saka-ease), background .15s var(--saka-ease);
+}
+.saka-tab:hover { color: var(--saka-accent); }
+.saka-tab.is-active {
+  color: var(--saka-ink-invert);
+  background: var(--saka-accent-bright);
+  border-color: var(--saka-accent-bright);
+}
+/* underline style (alt): add .saka-tabs--line to the bar */
+.saka-tabs--line .saka-tab { border-radius: 0; }
+.saka-tabs--line .saka-tab.is-active {
+  color: var(--saka-accent);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: inset 0 -2px 0 var(--saka-accent-bright);
+}
+.saka-tabpanel { padding: 18px 4px; }
+.saka-tabpanel[hidden] { display: none; }
+
+/* ============================================================
+   DISCLOSURE / ACCORDION / DROPDOWN
+   ============================================================ */
+.saka-accordion {
+  overflow: hidden;
+  border: var(--saka-border) solid var(--saka-accent-dim);
+  border-radius: var(--saka-radius);
+  background: var(--saka-bg-panel);
+}
+.saka-accordion + .saka-accordion { margin-top: 10px; }
+.saka-accordion > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  list-style: none;
+}
+.saka-accordion > summary::-webkit-details-marker { display: none; }
+.saka-accordion > summary::after {
+  content: "+";
+  color: var(--saka-muted);
+  font-size: 14px;
+}
+.saka-accordion[open] > summary::after { content: "–"; color: var(--saka-accent); }
+.saka-accordion__panel {
+  padding: 0 14px 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--saka-muted);
+  text-transform: none;
+}
+
+.saka-dropdown {
+  position: relative;
+  display: inline-block;
+}
+.saka-dropdown > summary,
+.saka-dropdown__trigger {
+  list-style: none;
+  cursor: pointer;
+}
+.saka-dropdown > summary::-webkit-details-marker { display: none; }
+.saka-dropdown__menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 200px;
+  padding: 8px;
+  background: var(--saka-bg-elevated);
+  border: var(--saka-border) solid var(--saka-accent);
+  border-radius: var(--saka-radius);
+  box-shadow: var(--saka-shadow-lg);
+  z-index: 20;
+}
+.saka-dropdown__menu[hidden] { display: none; }
+.saka-dropdown__item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: var(--saka-radius-sm);
+  background: transparent;
+  color: var(--saka-accent);
+  text-align: left;
+  cursor: pointer;
+}
+.saka-dropdown__item:hover {
+  background: color-mix(in srgb, var(--saka-accent) 12%, transparent);
+}
+.saka-dropdown__item.is-danger {
+  color: var(--saka-danger);
+}
+
+/* ============================================================
+   TOOLTIP / POPOVER
+   ============================================================ */
+.saka-tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.saka-tooltip__tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  transform: translateX(-50%) translateY(4px);
+  min-width: max-content;
+  max-width: 240px;
+  padding: 8px 10px;
+  font-size: 10px;
+  letter-spacing: var(--saka-tracking-wide);
+  text-transform: uppercase;
+  color: var(--saka-accent);
+  background: var(--saka-bg-elevated);
+  border: var(--saka-border) solid var(--saka-accent);
+  border-radius: var(--saka-radius-sm);
+  box-shadow: var(--saka-shadow-lg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .14s var(--saka-ease), transform .14s var(--saka-ease);
+  z-index: 30;
+}
+.saka-tooltip__tip::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 8px;
+  height: 8px;
+  border-right: var(--saka-border) solid var(--saka-accent);
+  border-bottom: var(--saka-border) solid var(--saka-accent);
+  background: var(--saka-bg-elevated);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.saka-tooltip:hover .saka-tooltip__tip,
+.saka-tooltip:focus-within .saka-tooltip__tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.saka-popover {
+  position: relative;
+  display: inline-block;
+}
+.saka-popover > summary {
+  list-style: none;
+}
+.saka-popover > summary::-webkit-details-marker { display: none; }
+.saka-popover__panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  min-width: 260px;
+  max-width: min(92vw, 320px);
+  padding: 14px;
+  background: var(--saka-bg-elevated);
+  border: var(--saka-border) solid var(--saka-accent);
+  border-radius: var(--saka-radius);
+  box-shadow: var(--saka-shadow-lg);
+  z-index: 25;
+}
+.saka-popover__panel[hidden] { display: none; }
+.saka-popover__title {
+  font-size: 12px;
+  letter-spacing: var(--saka-tracking-wide);
+}
+.saka-popover__text {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--saka-muted);
+}
+.saka-popover__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ============================================================
+   TREE VIEW  (native <details>/<summary>, no JS)
+   ============================================================ */
+.saka-tree { font-size: 13px; letter-spacing: var(--saka-tracking); }
+.saka-tree, .saka-tree ul { list-style: none; margin: 0; padding: 0; }
+.saka-tree ul { padding-left: 18px; border-left: var(--saka-border) solid var(--saka-accent-dim); margin-left: 8px; }
+.saka-tree li { margin: 2px 0; }
+.saka-tree__node,
+.saka-tree summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  color: var(--saka-accent);
+  border-radius: var(--saka-radius-sm);
+  cursor: pointer;
+  list-style: none;
+}
+.saka-tree summary::-webkit-details-marker { display: none; }
+.saka-tree__node:hover,
+.saka-tree summary:hover { background: color-mix(in srgb, var(--saka-accent) 12%, transparent); }
+.saka-tree__node.is-active { background: var(--saka-accent-bright); color: var(--saka-ink-invert); }
+/* disclosure caret */
+.saka-tree summary::before {
+  content: "";
+  width: 6px; height: 6px;
+  border-right: var(--saka-border) solid currentColor;
+  border-bottom: var(--saka-border) solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform .15s var(--saka-ease);
+}
+.saka-tree details[open] > summary::before { transform: rotate(45deg); }
+/* leaf indent to align past absent caret */
+.saka-tree__node { padding-left: 22px; }
+
+/* ============================================================
+   COLLAPSIBLE SIDEBAR  (left / right)
+   ============================================================ */
+.saka-shell { display: flex; align-items: stretch; gap: 0; min-height: 320px; }
+.saka-sidebar {
+  flex: 0 0 240px;
+  width: 240px;
+  padding: 16px;
+  background: var(--saka-bg-panel);
+  border: var(--saka-border) solid var(--saka-accent);
+  border-radius: var(--saka-radius);
+  overflow: hidden;
+  transition: flex-basis .22s var(--saka-ease), width .22s var(--saka-ease), padding .22s var(--saka-ease);
+}
+.saka-sidebar--right { order: 2; }
+.saka-sidebar.is-collapsed { flex-basis: 52px; width: 52px; padding: 16px 8px; }
+.saka-sidebar.is-collapsed .saka-sidebar__body { opacity: 0; pointer-events: none; }
+.saka-sidebar__head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; margin-bottom: 14px;
+}
+.saka-sidebar__title {
+  font-size: 12px; letter-spacing: var(--saka-tracking-wide);
+  white-space: nowrap; overflow: hidden;
+}
+.saka-sidebar.is-collapsed .saka-sidebar__title { opacity: 0; }
+.saka-sidebar__body { transition: opacity .18s var(--saka-ease); }
+.saka-sidebar__toggle {
+  flex: 0 0 auto;
+  width: 28px; height: 28px;
+  display: grid; place-items: center;
+  color: var(--saka-accent);
+  background: transparent;
+  border: var(--saka-border) solid var(--saka-accent);
+  border-radius: var(--saka-radius-sm);
+  cursor: pointer;
+}
+.saka-shell__main {
+  flex: 1 1 auto;
+  padding: 18px 22px;
+  background: var(--saka-bg-panel);
+  border: var(--saka-border) solid var(--saka-accent-dim);
+  border-radius: var(--saka-radius);
+  margin: 0 12px;
+}
+
+/* nav list inside sidebar */
+.saka-nav { display: flex; flex-direction: column; gap: 2px; }
+.saka-nav__item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px;
+  font-size: 12px; letter-spacing: var(--saka-tracking);
+  color: var(--saka-accent);
+  border-radius: var(--saka-radius-sm);
+  cursor: pointer; white-space: nowrap;
+}
+.saka-nav__item:hover { background: color-mix(in srgb, var(--saka-accent) 12%, transparent); }
+.saka-nav__item.is-active { background: var(--saka-accent-bright); color: var(--saka-ink-invert); }
+.saka-nav__item svg { flex: 0 0 auto; width: 16px; height: 16px; }
+
+/* ============================================================
+   MEDIA CARD  (title + image + body — Bootstrap card-style)
+   ============================================================ */
+.saka-mcard {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--saka-bg-panel);
+  border: var(--saka-border) solid var(--saka-accent);
+  border-radius: var(--saka-radius);
+}
+.saka-mcard__media {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background:
+    repeating-linear-gradient(45deg,
+      var(--saka-accent-dim) 0 2px, transparent 2px 10px),
+    color-mix(in srgb, var(--saka-accent) 10%, var(--saka-bg));
+  overflow: hidden;
+}
+.saka-mcard__media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.saka-mcard__tag {
+  position: absolute; top: 10px; left: 10px;
+  padding: 3px 9px; font-size: 9px; letter-spacing: var(--saka-tracking-wide);
+  background: var(--saka-accent-bright); color: var(--saka-ink-invert);
+  border-radius: var(--saka-radius-pill);
+}
+.saka-mcard__body { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.saka-mcard__title { font-size: 15px; letter-spacing: var(--saka-tracking); }
+.saka-mcard__text { font-size: 12px; line-height: 1.4; color: var(--saka-muted); text-transform: none; }
+.saka-mcard__footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 16px; border-top: var(--saka-border) solid var(--saka-accent-dim);
+}
+
+/* ============================================================
+   NAV / LIST / BREADCRUMB / PAGINATION
+   ============================================================ */
+.saka-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  letter-spacing: var(--saka-tracking-wide);
+}
+.saka-breadcrumb__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--saka-muted);
+}
+.saka-breadcrumb__item + .saka-breadcrumb__item::before {
+  content: "/";
+  color: var(--saka-accent-dim);
+}
+.saka-breadcrumb__item.is-current { color: var(--saka-accent); }
+
+.saka-list-group {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--saka-bg-panel);
+  border: var(--saka-border) solid var(--saka-accent-dim);
+  border-radius: var(--saka-radius);
+}
+.saka-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  color: var(--saka-accent);
+  border-top: var(--saka-border) solid var(--saka-accent-dim);
+}
+.saka-list-item:first-child { border-top: 0; }
+.saka-list-item:hover { background: color-mix(in srgb, var(--saka-accent) 10%, transparent); }
+.saka-list-item.is-active {
+  background: var(--saka-accent-bright);
+  color: var(--saka-ink-invert);
+}
+.saka-list-item.is-disabled {
+  opacity: .45;
+  pointer-events: none;
+}
+.saka-list-item__title { font-size: 12px; letter-spacing: var(--saka-tracking-wide); }
+.saka-list-item__meta {
+  font-size: 11px;
+  line-height: 1.4;
+  letter-spacing: var(--saka-tracking);
+  color: var(--saka-muted);
+  text-transform: none;
+}
+.saka-list-item.is-active .saka-list-item__meta { color: inherit; }
+
+.saka-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.saka-page {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  display: inline-grid;
+  place-items: center;
+  color: var(--saka-accent);
+  border: var(--saka-border) solid var(--saka-accent);
+  border-radius: var(--saka-radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+.saka-page:hover { background: color-mix(in srgb, var(--saka-accent) 10%, transparent); }
+.saka-page.is-active {
+  color: var(--saka-ink-invert);
+  background: var(--saka-accent-bright);
+  border-color: var(--saka-accent-bright);
+}
+.saka-page.is-disabled {
+  opacity: .4;
+  pointer-events: none;
+}
+
+/* ============================================================
+   DIALOG / MODAL  (native <dialog>, glass backdrop)
+   ============================================================ */
+.saka-dialog {
+  width: min(92vw, 460px);
+  max-height: 86vh;
+  padding: 0;
+  color: var(--saka-accent);
+  background:
+    linear-gradient(color-mix(in srgb, var(--saka-accent) 6%, transparent),
+                    color-mix(in srgb, var(--saka-accent) 6%, transparent)),
+    color-mix(in srgb, var(--saka-bg) 72%, transparent);   /* glass */
+  border: var(--saka-border) solid var(--saka-accent);
+  border-radius: var(--saka-radius);
+  box-shadow: var(--saka-shadow-lg),
+              0 0 0 1px color-mix(in srgb, var(--saka-accent) 20%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+  overflow: hidden;
+}
+/* frosted, tinted backdrop */
+.saka-dialog::backdrop {
+  background: color-mix(in srgb, var(--saka-bg) 55%, transparent);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+/* open/close animation */
+.saka-dialog[open] { animation: saka-dlg-in .2s var(--saka-ease); }
+.saka-dialog[open]::backdrop { animation: saka-fade-in .2s var(--saka-ease); }
+@keyframes saka-dlg-in { from { opacity: 0; transform: translateY(12px) scale(.98); } }
+@keyframes saka-fade-in { from { opacity: 0; } }
+
+/* size modifiers */
+.saka-dialog--sm { width: min(92vw, 340px); }
+.saka-dialog--lg { width: min(94vw, 640px); }
+.saka-dialog--full { width: 94vw; max-width: 94vw; height: 86vh; }
+
+/* sections */
+.saka-dialog__head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  padding: 18px 20px;
+  border-bottom: var(--saka-border) solid var(--saka-accent-dim);
+}
+.saka-dialog__title { font-size: 16px; letter-spacing: var(--saka-tracking-wide); }
+.saka-dialog__sub { font-size: 10px; letter-spacing: var(--saka-tracking); color: var(--saka-muted); margin-top: 4px; }
+
+.saka-dialog__body {
+  padding: 20px;
+  font-size: 13px; line-height: 1.5;
+  overflow-y: auto;
+  text-transform: none;                 /* readable prose */
+}
+.saka-dialog__body .saka-panel__label,
+.saka-dialog__body .saka-label { text-transform: uppercase; }
+
+.saka-dialog__foot {
+  display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+  padding: 14px 20px;
+  border-top: var(--saka-border) solid var(--saka-accent-dim);
+}
+.saka-dialog__foot.is-split { justify-content: space-between; }
+
+/* close button (top-right) */
+.saka-dialog__close {
+  flex: 0 0 auto;
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  font: inherit; font-size: 14px;
+  color: var(--saka-accent);
+  background: transparent;
+  border: var(--saka-border) solid var(--saka-accent);
+  border-radius: var(--saka-radius-sm);
+  cursor: pointer;
+  transition: all .15s var(--saka-ease);
+}
+.saka-dialog__close:hover { background: var(--saka-accent-bright); color: var(--saka-ink-invert); border-color: var(--saka-accent-bright); }
+
+/* accent left-rail for alert-style dialogs */
+.saka-dialog--alert { border-left-width: 4px; }
+
+/* ============================================================
+   ALERTS / TOASTS / STATUS
+   ============================================================ */
+.saka-alert,
+.saka-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: var(--saka-border) solid var(--saka-border-soft);
+  border-radius: var(--saka-radius);
+  background: var(--saka-bg-panel);
+  box-shadow: var(--saka-shadow-lg);
+}
+.saka-toast--floating {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: min(92vw, 340px);
+  z-index: 60;
+}
+.saka-alert__icon,
+.saka-toast__icon {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: var(--saka-border) solid currentColor;
+  border-radius: 50%;
+}
+.saka-alert__body,
+.saka-toast__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.saka-alert__title,
+.saka-toast__title {
+  font-size: 12px;
+  letter-spacing: var(--saka-tracking-wide);
+}
+.saka-alert__text,
+.saka-toast__text {
+  font-size: 12px;
+  line-height: 1.45;
+  text-transform: none;
+  color: inherit;
+}
+.saka-alert__action,
+.saka-toast__action {
+  margin-left: auto;
+  align-self: center;
+}
+.saka-alert.is-info,
+.saka-toast.is-info {
+  color: var(--saka-info);
+}
+.saka-alert.is-success,
+.saka-toast.is-success {
+  color: var(--saka-success);
+}
+.saka-alert.is-warning,
+.saka-toast.is-warning {
+  color: var(--saka-warning);
+}
+.saka-alert.is-danger,
+.saka-toast.is-danger {
+  color: var(--saka-danger);
+}
+.saka-alert.is-info .saka-alert__icon,
+.saka-toast.is-info .saka-toast__icon { background: color-mix(in srgb, var(--saka-info) 12%, transparent); }
+.saka-alert.is-success .saka-alert__icon,
+.saka-toast.is-success .saka-toast__icon { background: color-mix(in srgb, var(--saka-success) 12%, transparent); }
+.saka-alert.is-warning .saka-alert__icon,
+.saka-toast.is-warning .saka-toast__icon { background: color-mix(in srgb, var(--saka-warning) 12%, transparent); }
+.saka-alert.is-danger .saka-alert__icon,
+.saka-toast.is-danger .saka-toast__icon { background: color-mix(in srgb, var(--saka-danger) 12%, transparent); }
+
+/* ============================================================
+   PROGRESS / SKELETON / AVATAR
+   ============================================================ */
+.saka-progress {
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  background: var(--saka-field-bg);
+  border: var(--saka-border) solid var(--saka-accent-dim);
+  border-radius: var(--saka-radius-pill);
+}
+.saka-progress--sm { height: 6px; }
+.saka-progress__bar {
+  width: var(--_value, 50%);
+  height: 100%;
+  background: linear-gradient(90deg, var(--saka-accent-bright), var(--saka-accent-glow));
+  transition: width .22s var(--saka-ease);
+}
+.saka-progress__label {
+  font-size: 10px;
+  letter-spacing: var(--saka-tracking-wide);
+  color: var(--saka-muted);
+}
+
+.saka-skeleton {
+  position: relative;
+  overflow: hidden;
+  min-height: 1em;
+  border-radius: var(--saka-radius-sm);
+  background: color-mix(in srgb, var(--saka-accent) 8%, var(--saka-bg));
+}
+.saka-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg,
+    transparent,
+    color-mix(in srgb, var(--saka-accent) 24%, transparent),
+    transparent);
+  animation: saka-shimmer 1.2s infinite;
+}
+@keyframes saka-shimmer { to { transform: translateX(100%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .saka *,
+  .saka *::before,
+  .saka *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.saka-avatar {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--saka-ink-invert);
+  background: var(--saka-accent-bright);
+  border: var(--saka-border) solid var(--saka-accent-bright);
+  border-radius: 50%;
+  font-size: 12px;
+  letter-spacing: var(--saka-tracking-wide);
+}
+.saka-avatar--sm { width: 28px; height: 28px; font-size: 10px; }
+.saka-avatar--lg { width: 56px; height: 56px; font-size: 14px; }
+
+/* ============================================================
+   TABLES / INPUT GROUPS
+   ============================================================ */
+.saka-table-wrap {
+  overflow-x: auto;
+  border: var(--saka-border) solid var(--saka-accent-dim);
+  border-radius: var(--saka-radius);
+  background: var(--saka-bg-panel);
+}
+.saka-table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+}
+.saka-table th,
+.saka-table td {
+  padding: 12px 14px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: var(--saka-border) solid var(--saka-accent-dim);
+}
+.saka-table thead th {
+  font-size: 11px;
+  letter-spacing: var(--saka-tracking-wide);
+  color: var(--saka-muted);
+  background: var(--saka-bg-elevated);
+}
+.saka-table tbody tr:hover { background: color-mix(in srgb, var(--saka-accent) 8%, transparent); }
+.saka-table tbody tr.is-selected {
+  background: var(--saka-accent-bright);
+  color: var(--saka-ink-invert);
+}
+.saka-table tbody tr:last-child td { border-bottom: 0; }
+.saka-table--striped tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--saka-accent) 6%, transparent);
+}
+
+.saka-input-group {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+}
+.saka-input-group .saka-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-radius: 0;
+}
+.saka-input-group .saka-input:first-child {
+  border-top-left-radius: var(--saka-radius-sm);
+  border-bottom-left-radius: var(--saka-radius-sm);
+}
+.saka-input-group .saka-input:last-child {
+  border-top-right-radius: var(--saka-radius-sm);
+  border-bottom-right-radius: var(--saka-radius-sm);
+}
+.saka-input-group__addon {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  color: var(--saka-muted);
+  background: var(--saka-bg-elevated);
+  border: var(--saka-border) solid var(--saka-accent);
+  border-right: 0;
+  border-radius: var(--saka-radius-sm) 0 0 var(--saka-radius-sm);
+}
+.saka-input-group__addon--end {
+  border-right: var(--saka-border) solid var(--saka-accent);
+  border-left: 0;
+  border-radius: 0 var(--saka-radius-sm) var(--saka-radius-sm) 0;
+}
+.saka-form-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* ============================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================ */
+@media (max-width: 1100px) {
+  .saka-shell {
+    flex-direction: column;
+  }
+
+  .saka-shell__main {
+    margin: 0;
+  }
+
+  .saka-sidebar,
+  .saka-sidebar--right {
+    width: 100%;
+    flex-basis: auto;
+    order: 0;
+  }
+
+  .saka-sidebar.is-collapsed {
+    flex-basis: auto;
+    width: 100%;
+    padding: 16px;
+  }
+
+  .saka-sidebar.is-collapsed .saka-sidebar__body {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .saka-sidebar.is-collapsed .saka-sidebar__title {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 900px) {
+  .saka {
+    font-size: 14px;
+  }
+
+  .saka-card,
+  .saka-panel,
+  .saka-mcard__body,
+  .saka-mcard__footer,
+  .saka-dialog__head,
+  .saka-dialog__body,
+  .saka-dialog__foot {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .saka-tab {
+    padding-inline: 14px;
+  }
+
+  .saka-btn {
+    padding: 9px 16px;
+  }
+
+  .saka-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .saka-btn--icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .saka-badge-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .saka-dialog {
+    width: min(96vw, 460px);
+  }
+
+  .saka-toast--floating {
+    right: 14px;
+    bottom: 14px;
+  }
+}
+
+@media (max-width: 720px) {
+  .saka {
+    letter-spacing: 0.06em;
+  }
+
+  .saka-tabs,
+  .saka-breadcrumb,
+  .saka-cluster {
+    gap: 8px;
+  }
+
+  .saka-tabs {
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .saka-btn-group {
+    flex-wrap: wrap;
+  }
+
+  .saka-btn-group .saka-btn {
+    margin-left: 0;
+    border-radius: var(--saka-radius-pill);
+  }
+
+  .saka-list-item,
+  .saka-alert,
+  .saka-toast,
+  .saka-split {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .saka-alert__action,
+  .saka-toast__action {
+    margin-left: 0;
+    align-self: stretch;
+  }
+
+  .saka-popover__panel,
+  .saka-tooltip__tip {
+    left: 0;
+    right: auto;
+    transform: translateY(0);
+    max-width: calc(100vw - 28px);
+  }
+
+  .saka-tooltip__tip::after {
+    left: 22px;
+    transform: translateY(-50%) rotate(45deg);
+  }
+}
+
+@media (max-width: 560px) {
+  .saka {
+    font-size: 13px;
+  }
+
+  .saka-card,
+  .saka-panel,
+  .saka-dialog__head,
+  .saka-dialog__body,
+  .saka-dialog__foot {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .saka-card.is-vertical {
+    writing-mode: horizontal-tb;
+    transform: none;
+  }
+
+  .saka-mcard__footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .saka-table {
+    min-width: 460px;
+  }
+
+  .saka-dropdown__menu,
+  .saka-popover__panel {
+    min-width: min(92vw, 300px);
+  }
+
+  .saka-input-group {
+    flex-wrap: wrap;
+  }
+
+  .saka-input-group__addon,
+  .saka-input-group__addon--end {
+    border-right: var(--saka-border) solid var(--saka-accent);
+    border-left: var(--saka-border) solid var(--saka-accent);
+    border-radius: var(--saka-radius-sm);
+  }
+
+  .saka-input-group .saka-input {
+    border-radius: var(--saka-radius-sm);
+  }
+}
+
+/* ============================================================
+   PANEL  — the data readout (flight-info style)
+   ============================================================ */
+.saka-panel {
+  position: relative;
+  padding: 18px 18px 40px;
+  background: color-mix(in srgb, var(--saka-accent) 8%, var(--saka-bg));
+  border: var(--saka-border) solid var(--saka-accent);
+  border-radius: var(--saka-radius);
+  color: var(--saka-accent);
+}
+.saka-panel__close {
+  position: absolute;
+  top: 14px; right: 14px;
+  width: 34px; height: 16px;
+  background: var(--saka-accent-bright);
+  border-radius: var(--saka-radius-pill);
+}
+.saka-panel__row { margin-bottom: 14px; }
+.saka-panel__label { color: var(--saka-muted); font-size: 11px; }
+.saka-panel__value { font-size: 13px; }
+
+/* highlighted / active data line (inverted bar) */
+.saka-panel__row.is-active {
+  background: var(--saka-accent-bright);
+  color: var(--saka-ink-invert);
+  padding: 4px 10px;
+  border-radius: var(--saka-radius-pill);
+  display: inline-block;
+}
+
+/* scrollbar nub at panel foot */
+.saka-panel__scroll {
+  position: absolute;
+  left: 18px; right: 18px; bottom: 14px;
+  height: 8px;
+  border-radius: var(--saka-radius-pill);
+  background: linear-gradient(90deg,
+              var(--saka-accent) 30%, var(--saka-accent-dim) 30%);
+}
+
+/* ============================================================
+   DECOR  — dotted rules, plus ticks, HUD grid, targeting rings
+   ============================================================ */
+
+/* dotted separator (the ...... line) */
+.saka-dotline {
+  height: 4px;
+  background-image: radial-gradient(var(--saka-accent) 40%, transparent 42%);
+  background-size: 10px 4px;
+  background-repeat: repeat-x;
+  opacity: .9;
+}
+
+/* plus tick mark */
+.saka-plus {
+  position: relative;
+  width: 18px; height: 18px;
+  color: var(--saka-accent);
+}
+.saka-plus::before, .saka-plus::after {
+  content: "";
+  position: absolute;
+  background: currentColor;
+}
+.saka-plus::before { left: 50%; top: 0; width: 1.5px; height: 100%; transform: translateX(-50%); }
+.saka-plus::after  { top: 50%; left: 0; height: 1.5px; width: 100%; transform: translateY(-50%); }
+
+/* HUD backdrop grid */
+.saka-grid {
+  background-image:
+    linear-gradient(var(--saka-accent-dim) 1px, transparent 1px),
+    linear-gradient(90deg, var(--saka-accent-dim) 1px, transparent 1px);
+  background-size: 50% 50%;
+}
+
+/* targeting ring / radar node */
+.saka-target {
+  --_s: 90px;
+  position: relative;
+  width: var(--_s); height: var(--_s);
+  border: var(--saka-border) solid var(--saka-accent);
+  border-radius: 50%;
+}
+.saka-target.is-dashed { border-style: dashed; }
+.saka-target::after {         /* center diamond */
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 8px; height: 8px;
+  background: var(--saka-accent);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+/* full-bleed HUD frame with corner notch */
+.saka-frame {
+  border: var(--saka-border) solid var(--saka-accent);
+  border-radius: var(--saka-radius);
+  padding: 24px;
+}
+
+/* logo mark box (three overlapping circles sit inside) */
+.saka-logobox {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: var(--saka-border) solid currentColor;
+  border-radius: var(--saka-radius-sm);
+}
+
+/* wordmark */
+.saka-wordmark {
+  font-weight: 700;
+  font-size: 2.4rem;
+  letter-spacing: 0.02em;
+  text-transform: lowercase;
+}
+
+/* ============================================================
+   FORM COMPONENTS
+   ============================================================ */
+
+/* field wrapper + label + hint */
+.saka-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.saka-label {
+  font-size: 12px;
+  letter-spacing: var(--saka-tracking-wide);
+  color: var(--saka-accent);
+}
+.saka-label[data-required]::after { content: " *"; color: var(--saka-accent-bright); }
+.saka-hint  { font-size: 11px; letter-spacing: var(--saka-tracking); color: var(--saka-muted); }
+.saka-field.is-error .saka-hint { color: var(--saka-accent-bright); }
+
+/* ---- text-like inputs: text / email / password / number / date / textarea / select ---- */
+.saka-input,
+.saka-textarea,
+.saka-select {
+  width: 100%;
+  padding: 11px 14px;
+  font: inherit;
+  font-size: 14px;
+  letter-spacing: var(--saka-tracking);
+  text-transform: uppercase;
+  color: var(--saka-accent);
+  background: var(--saka-field-bg);
+  border: var(--saka-border) solid var(--saka-accent);
+  border-radius: var(--saka-radius-sm);
+  outline: none;
+  transition: background .16s var(--saka-ease), border-color .16s var(--saka-ease),
+              box-shadow .16s var(--saka-ease);
+  -webkit-appearance: none;
+  appearance: none;
+}
+.saka-input::placeholder,
+.saka-textarea::placeholder { color: var(--saka-muted); text-transform: uppercase; }
+
+.saka-input:focus,
+.saka-textarea:focus,
+.saka-select:focus {
+  background: var(--saka-field-focus);
+  border-color: var(--saka-accent-bright);
+  box-shadow: 0 0 0 1px var(--saka-accent-bright);
+}
+.saka-input:disabled,
+.saka-textarea:disabled,
+.saka-select:disabled { opacity: .4; cursor: not-allowed; }
+
+.saka-field.is-error .saka-input,
+.saka-field.is-error .saka-textarea,
+.saka-field.is-error .saka-select {
+  border-color: var(--saka-accent-bright);
+  box-shadow: 0 0 0 1px var(--saka-accent-bright);
+}
+
+.saka-textarea { resize: vertical; min-height: 90px; line-height: 1.4; }
+
+/* date/time: tint native picker to accent */
+.saka-input[type="date"],
+.saka-input[type="time"],
+.saka-input[type="datetime-local"] { color-scheme: dark; }
+.saka-input[type="date"]::-webkit-calendar-picker-indicator,
+.saka-input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: grayscale(1) brightness(1.4);
+  cursor: pointer;
+}
+
+/* select: custom caret */
+.saka-select-wrap { position: relative; }
+.saka-select-wrap::after {
+  content: "";
+  position: absolute;
+  right: 14px; top: 50%;
+  width: 7px; height: 7px;
+  border-right: var(--saka-border) solid var(--saka-accent);
+  border-bottom: var(--saka-border) solid var(--saka-accent);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+.saka-select { padding-right: 34px; }
+.saka-select option { background: var(--saka-bg); color: var(--saka-accent); }
+
+/* ---- checkbox + radio ---- */
+.saka-check,
+.saka-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 11px;
+  letter-spacing: var(--saka-tracking);
+  color: var(--saka-accent);
+  user-select: none;
+}
+.saka-check input,
+.saka-radio input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+.saka-check__box,
+.saka-radio__box {
+  flex: 0 0 auto;
+  width: 18px; height: 18px;
+  display: grid;
+  place-items: center;
+  border: var(--saka-border) solid var(--saka-accent);
+  background: var(--saka-field-bg);
+  transition: background .14s var(--saka-ease), box-shadow .14s var(--saka-ease);
+}
+.saka-check__box { border-radius: 4px; }
+.saka-radio__box { border-radius: 50%; }
+
+/* checked states — fill with bright accent */
+.saka-check input:checked + .saka-check__box {
+  background: var(--saka-accent-bright);
+  border-color: var(--saka-accent-bright);
+}
+.saka-check input:checked + .saka-check__box::after {
+  content: "";
+  width: 5px; height: 9px;
+  border: solid var(--saka-ink-invert);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+.saka-radio input:checked + .saka-radio__box::after {
+  content: "";
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--saka-accent-bright);
+}
+.saka-radio input:checked + .saka-radio__box { border-color: var(--saka-accent-bright); }
+
+/* focus ring for keyboard nav */
+.saka-check input:focus-visible + .saka-check__box,
+.saka-radio input:focus-visible + .saka-radio__box { box-shadow: 0 0 0 2px var(--saka-accent-glow); }
+
+/* ---- toggle switch ---- */
+.saka-toggle { display: inline-flex; align-items: center; gap: 12px; cursor: pointer; font-size: 11px; letter-spacing: var(--saka-tracking); color: var(--saka-accent); user-select: none; }
+.saka-toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+.saka-toggle__track {
+  position: relative;
+  width: 46px; height: 22px;
+  border: var(--saka-border) solid var(--saka-accent);
+  border-radius: var(--saka-radius-pill);
+  background: var(--saka-field-bg);
+  transition: background .18s var(--saka-ease), border-color .18s var(--saka-ease);
+}
+.saka-toggle__track::after {
+  content: "";
+  position: absolute;
+  top: 50%; left: 3px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--saka-accent);
+  transform: translateY(-50%);
+  transition: left .18s var(--saka-ease), background .18s var(--saka-ease);
+}
+.saka-toggle input:checked + .saka-toggle__track {
+  background: var(--saka-accent-bright);
+  border-color: var(--saka-accent-bright);
+}
+.saka-toggle input:checked + .saka-toggle__track::after {
+  left: 27px;
+  background: var(--saka-ink-invert);
+}
+.saka-toggle input:focus-visible + .saka-toggle__track { box-shadow: 0 0 0 2px var(--saka-accent-glow); }
+
+/* ---- range slider ---- */
+.saka-range {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 4px;
+  background: var(--saka-accent-dim);
+  border-radius: var(--saka-radius-pill);
+  outline: none;
+}
+.saka-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--saka-accent-bright);
+  border: 2px solid var(--saka-bg);
+  cursor: pointer;
+}
+.saka-range::-moz-range-thumb {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--saka-accent-bright); border: 2px solid var(--saka-bg); cursor: pointer;
+}
+
+/* ---- segmented control (radio group styled as pills) ---- */
+.saka-segment { display: inline-flex; border: var(--saka-border) solid var(--saka-accent); border-radius: var(--saka-radius-pill); overflow: hidden; }
+.saka-segment label {
+  padding: 8px 16px;
+  font-size: 10px;
+  letter-spacing: var(--saka-tracking-wide);
+  color: var(--saka-accent);
+  cursor: pointer;
+  transition: background .14s var(--saka-ease), color .14s var(--saka-ease);
+}
+.saka-segment input { position: absolute; opacity: 0; }
+.saka-segment input:checked + label { background: var(--saka-accent-bright); color: var(--saka-ink-invert); }

@@ -1,9 +1,10 @@
 import {it,expect} from 'vitest';
 import {IDBFactory} from 'fake-indexeddb';
 import {WorkoutSession,type ExerciseId} from './workout';
-import {WorkoutStore} from '../storage/workout-store';
+import {WorkoutStore,type LocalWorkout} from '../storage/workout-store';
 import {catalogIds,newBinding,toDTO,fromDTO} from '../sync/mapper';
 import {loadLabel} from '../components/WorkoutLog.web';
+import {exerciseCatalog,importedExerciseCount,isSupportedExerciseId} from './exercises';
 
 const ids=['lat-pulldown','seated-cable-row','face-pull','straight-arm-pulldown'] as const;
 it.each(ids)('%s: one stack, snapshot, local preferences and API history roundtrip',async slug=>{
@@ -16,6 +17,17 @@ it.each(ids)('%s: one stack, snapshot, local preferences and API history roundtr
  expect(dto.exercises[0].exercise_id).toBe(`00000000-0000-4000-8000-00000000000${ids.indexOf(slug)+6}`);
  expect(fromDTO(dto,crypto.randomUUID()).record.snapshot).toEqual(local.snapshot);await store.close();
 });
-it('keeps the original exercise IDs and expands the catalogue to nine',()=>{
- expect(catalogIds['bench-press']).toBe('00000000-0000-4000-8000-000000000005');expect(Object.keys(catalogIds)).toHaveLength(9);
+it('keeps original exercise IDs while importing the full manual catalog',()=>{
+ expect(catalogIds['bench-press']).toBe('00000000-0000-4000-8000-000000000005');expect(Object.keys(catalogIds)).toHaveLength(1333);
+});
+it('logs an imported exercise manually and roundtrips its stable ID through sync',()=>{
+ const id='dataset:0001';expect(importedExerciseCount).toBe(1324);
+ expect(isSupportedExerciseId(id)).toBe(false);
+ const session=new WorkoutSession({clock:()=>1000,idFactory:()=>crypto.randomUUID()});
+ session.addManualSet(id,12,15);session.finish();
+ const local:LocalWorkout={id:crypto.randomUUID(),revision:0,snapshot:session.exportSnapshot(),preferences:{profile:'auto',manualExercise:id,manualReps:'12',manualLoad:'15',restSeconds:{}}};
+ const dto=toDTO(local,newBinding(local.id,crypto.randomUUID()));
+ expect(dto.exercises[0].exercise_id).toBe(exerciseCatalog[id].uuid);
+ expect(dto.exercises[0].sets[0].recognition_status).toBe('manual');
+ expect(fromDTO(dto,crypto.randomUUID()).record.snapshot.sets[0].exercise).toBe(id);
 });

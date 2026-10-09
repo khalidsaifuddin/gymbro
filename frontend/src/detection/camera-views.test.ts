@@ -1,12 +1,13 @@
 import {describe,it,expect} from 'vitest';
-import {WorkoutSession,type ExerciseId} from '../domain/workout';
+import {WorkoutSession} from '../domain/workout';
+import type {SupportedExerciseId} from '../domain/exercises';
 import {PosePhaseAdapter} from './pose-phase-adapter';
 import {TemporalExerciseRecognizer} from './temporal-exercise-recognizer';
 import {pose,readyAngle,peakAngle} from './fixtures/pose';
 
 const views=['front-left','front-right','rear-left','rear-right','side-left','side-right'] as const;
-const unilateral:ExerciseId[]=['squat','push-up','machine-shoulder-press','bench-press'];
-function halfPose(exercise:ExerciseId,degrees:number,side:0|1){
+const unilateral:SupportedExerciseId[]=['squat','push-up','machine-shoulder-press','bench-press'];
+function halfPose(exercise:SupportedExerciseId,degrees:number,side:0|1){
  const points=pose(exercise,degrees);
  for(const base of [11,13,15,23,25,27])points[base+1-side].visibility=.1;
  return points;

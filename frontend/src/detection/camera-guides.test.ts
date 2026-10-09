@@ -1,10 +1,10 @@
 import {it,expect} from 'vitest';
 import {cameraGuidance} from './camera-guides';
 
-it('does not tell users to reposition the default camera when exercises change in an active session',()=>{
+it('keeps the current exercise in view and allows a new angle after its set',()=>{
  expect(cameraGuidance('bench-press','auto',true)).not.toContain('Kamera dari');
  expect(cameraGuidance('bench-press','auto',true)).toContain('terlihat');
- expect(cameraGuidance('bench-press','auto',true)).toContain('Posisi kamera tetap');
+ expect(cameraGuidance('bench-press','auto',true)).toContain('Sudut dapat diubah setelah set aktif berakhir');
 });
 it('offers exercise-specific placement before the session and retains an explicit fixed direction',()=>{
  expect(cameraGuidance('bench-press','auto',false)).toContain('Kamera dari samping bangku');

@@ -22,7 +22,7 @@ func TestFreshSchemasAndRepeatableSeed(t *testing.T) {
 		}
 	}
 	var count int64
-	if err := db.Raw(`SELECT count(*) FROM ref.exercises`).Scan(&count).Error; err != nil || count != 9 {
+	if err := db.Raw(`SELECT count(*) FROM ref.exercises`).Scan(&count).Error; err != nil || count != 1333 {
 		t.Fatalf("exercise seed: %d, %v", count, err)
 	}
 	if err := db.Raw(`SELECT count(*) FROM ref.exercise_assets WHERE license='CC-BY-4.0' AND mime_type='image/svg+xml'`).Scan(&count).Error; err != nil || count != 9 {
@@ -31,9 +31,30 @@ func TestFreshSchemasAndRepeatableSeed(t *testing.T) {
 	if err := Up(db); err != nil {
 		t.Fatal(err)
 	}
-	if err := db.Raw(`SELECT count(*) FROM ref.exercises`).Scan(&count).Error; err != nil || count != 9 {
+	if err := db.Raw(`SELECT count(*) FROM ref.exercises`).Scan(&count).Error; err != nil || count != 1333 {
 		t.Fatalf("repeatable seed: %d, %v", count, err)
 	}
+}
+func TestImportedManualOnlyExerciseCanBeLogged(t *testing.T) {
+	db := testdb.New(t)
+	if err := Up(db); err != nil { t.Fatal(err) }
+	var count int64
+	if err := db.Raw(`SELECT count(*) FROM ref.exercises WHERE slug LIKE 'dataset-%' AND automatic_candidate=false`).Scan(&count).Error; err != nil || count != 1324 {
+		t.Fatalf("manual-only catalog count: %d, %v", count, err)
+	}
+	var id string
+	if err := db.Raw(`SELECT id::text FROM ref.exercises WHERE slug='dataset-0001'`).Scan(&id).Error; err != nil || id != "00000000-0000-4000-8001-000000000001" {
+		t.Fatalf("dataset identity: %q, %v", id, err)
+	}
+	uid, wid, eid, sid := "10000000-0000-4000-8000-000000001324", "20000000-0000-4000-8000-000000001324", "30000000-0000-4000-8000-000000001324", "40000000-0000-4000-8000-000000001324"
+	for _, query := range []struct{sql string; args []any}{
+		{`INSERT INTO ref.users(id,google_sub,display_name) VALUES(?,?,?)`, []any{uid,"dataset-user","Dataset User"}},
+		{`INSERT INTO public.workouts(id,user_id,started_at,status) VALUES(?,?,now(),'active')`, []any{wid,uid}},
+		{`INSERT INTO public.workout_exercises(id,workout_id,exercise_id,position) VALUES(?,?,?,0)`, []any{eid,wid,id}},
+		{`INSERT INTO public.workout_sets(id,workout_exercise_id,position,detected_reps,reps,rep_source,recognition_status,started_at,last_rep_at,load_kg,source_ids) VALUES(?,?,0,0,12,'manual','manual',now(),now(),20,ARRAY[?]::uuid[])`, []any{sid,eid,sid}},
+	} { if err := db.Exec(query.sql,query.args...).Error; err != nil { t.Fatal(err) } }
+	var reps int
+	if err := db.Raw(`SELECT reps FROM public.workout_sets WHERE id=?`,sid).Scan(&reps).Error; err != nil || reps != 12 { t.Fatalf("manual set roundtrip: %d, %v",reps,err) }
 }
 func TestConstraintsAndNumericStorage(t *testing.T) {
 	db := testdb.New(t)
@@ -234,7 +255,7 @@ func TestCableCatalogueUpgradePreservesExistingDataAndLedger(t *testing.T) {
 	var exercises, assets int64
 	db.Raw(`SELECT count(*) FROM ref.exercises`).Scan(&exercises)
 	db.Raw(`SELECT count(*) FROM ref.exercise_assets WHERE license='CC-BY-4.0'`).Scan(&assets)
-	if exercises != 9 || assets != 9 {
+ if exercises != 1333 || assets != 9 {
 		t.Fatalf("upgraded catalogue: %d exercises/%d assets", exercises, assets)
 	}
 	for i, slug := range []string{"lat-pulldown", "seated-cable-row", "face-pull", "straight-arm-pulldown"} {
@@ -266,7 +287,7 @@ func TestCableRollbackRefusesReferencedMastersAtomically(t *testing.T) {
 	db.Raw(`SELECT count(*) FROM ref.exercise_assets`).Scan(&assets)
 	db.Raw(`SELECT count(*) FROM public.schema_migrations`).Scan(&versions)
 	db.Raw(`SELECT count(*) FROM public.workouts`).Scan(&workouts)
-	if assets != 9 || versions != 4 || workouts != 1 {
+ if assets != 9 || versions != 5 || workouts != 1 {
 		t.Fatalf("rollback was partial: assets=%d versions=%d workouts=%d", assets, versions, workouts)
 	}
 	if err := Up(db); err != nil {

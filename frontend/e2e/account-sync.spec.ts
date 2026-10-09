@@ -1,9 +1,12 @@
 import {test,expect,type Page} from '@playwright/test';
 import {cableExercises,exerciseCatalog} from '../src/domain/exercises';
+import {startEmptyWorkout} from './fixtures/workout-ui';
 async function manual(page:Page,reps='10',kg='40'){
+ if(await page.getByRole('button',{name:'Start Empty Workout'}).isVisible())await startEmptyWorkout(page);
  await page.getByLabel('Latihan untuk set manual').selectOption('bench-press');await page.getByLabel('Reps manual',{exact:true}).fill(reps);await page.getByLabel('Beban kg',{exact:true}).fill(kg);await page.getByRole('button',{name:'Catat set manual',exact:true}).click();await page.getByRole('button',{name:'Selesaikan workout',exact:true}).click();await expect(page.getByText('Tersimpan di perangkat',{exact:true})).toBeVisible();
 }
-async function login(page:Page){await page.getByRole('link',{name:'Masuk dengan Google',exact:true}).click();await expect(page.getByText('Akun: Fixture athlete',{exact:true})).toBeVisible();}
+async function revealAccount(page:Page){const panel=page.getByRole('region',{name:'Akun dan sinkronisasi'});if(!await panel.isVisible())await page.locator('summary').filter({hasText:'Account and sync'}).click();}
+async function login(page:Page){await revealAccount(page);await page.getByRole('link',{name:'Masuk dengan Google',exact:true}).click();await revealAccount(page);await expect(page.getByText('Akun: Fixture athlete',{exact:true})).toBeVisible();}
 test('signed fixture login, opt-in guest import and cross-device corrected history',async({page,browser})=>{
  await page.goto('/');await manual(page);await login(page);
  await expect(page.getByText('1 workout tamu belum diimpor',{exact:true})).toBeVisible();
@@ -23,7 +26,7 @@ async function history(page:Page){const response=await page.request.get('/api/v1
 async function correct(page:Page,reps:string){await page.getByRole('button',{name:'Mode log',exact:true}).click();await page.getByLabel('Reps set 1 Flat barbell bench press',{exact:true}).fill(reps);await page.getByRole('button',{name:'Simpan set 1 Flat barbell bench press',exact:true}).click();await expect(page.getByText('Tersimpan di perangkat',{exact:true})).toBeVisible();}
 test('finishing during an in-flight active mutation uploads the completed result without camera configuration',async({page,context})=>{
  await context.addCookies([{name:'fixture_subject',value:'fixture-final-save',url:'http://127.0.0.1:8094'}]);
- await page.goto('/');await login(page);await page.getByLabel('Sudut kamera',{exact:true}).selectOption('front-right');
+ await page.goto('/');await login(page);await startEmptyWorkout(page);
  let signalStarted!:()=>void,release!:()=>void,first=true;
  const started=new Promise<void>(resolve=>{signalStarted=resolve;}),gate=new Promise<void>(resolve=>{release=resolve;});
  await page.route('**/api/v1/workout-mutations',async route=>{
@@ -36,7 +39,6 @@ test('finishing during an in-flight active mutation uploads the completed result
  await page.getByRole('button',{name:'Selesaikan workout',exact:true}).click();await expect(page.getByText('Tersimpan di perangkat',{exact:true})).toBeVisible();release();
  await expect.poll(async()=>(await history(page))[0]?.status).toBe('completed');
  await expect(page.getByText('Sinkronisasi selesai',{exact:true})).toBeVisible();
- await expect(page.getByLabel('Sudut kamera',{exact:true})).toHaveValue('front-right');
 });
 test('two devices preserve divergent edits and require explicit conflict resolution',async({page,context,browser})=>{
  await context.addCookies([{name:'fixture_subject',value:'fixture-conflict',url:'http://127.0.0.1:8094'}]);await page.goto('/');await login(page);await manual(page);await expect.poll(async()=>(await history(page))[0]?.status).toBe('completed');
@@ -48,14 +50,14 @@ test('two devices preserve divergent edits and require explicit conflict resolut
 test('workout deletion blocks stale sync, and account deletion invalidates cookies and clears only account data',async({page,context,browser})=>{
  await context.addCookies([{name:'fixture_subject',value:'fixture-delete',url:'http://127.0.0.1:8094'}]);await page.goto('/');await manual(page,'6','30');await login(page);await manual(page);await expect.poll(async()=>(await history(page))[0]?.status).toBe('completed');
  const other=await browser.newContext();await other.addCookies([{name:'fixture_subject',value:'fixture-delete',url:'http://127.0.0.1:8094'}]);const stale=await other.newPage();await stale.goto('http://127.0.0.1:8093');await login(stale);await stale.getByRole('button',{name:'Muat riwayat akun',exact:true}).click();await stale.getByRole('button',{name:'Lihat workout',exact:true}).first().click();await other.setOffline(true);await correct(stale,'20');
- await page.getByRole('button',{name:'Hapus workout',exact:true}).first().click();await page.getByRole('button',{name:'Konfirmasi hapus workout',exact:true}).click();await expect.poll(async()=>(await history(page)).length).toBe(0);
+ await page.getByRole('button',{name:'Back to Workouts'}).click();await page.getByRole('button',{name:'Hapus workout',exact:true}).first().click();await page.getByRole('button',{name:'Konfirmasi hapus workout',exact:true}).click();await expect.poll(async()=>(await history(page)).length).toBe(0);
  await other.setOffline(false);await expect(stale.getByRole('button',{name:'Hapus salinan lokal',exact:true})).toBeVisible();await expect(stale.getByRole('button',{name:'Gunakan hasil lokal',exact:true})).toHaveCount(0);await stale.getByRole('button',{name:'Hapus salinan lokal',exact:true}).click();expect(await history(stale)).toEqual([]);
  const oldUser=(await (await page.request.get('/api/v1/auth/me')).json()).user.id;
- await page.getByRole('button',{name:'Hapus akun',exact:true}).click();await page.getByRole('button',{name:'Konfirmasi hapus akun',exact:true}).click();await expect(page.getByText('Akun dihapus; workout tamu tetap ada',{exact:true})).toBeVisible();expect((await stale.request.get('/api/v1/workouts')).status()).toBe(401);
+ await revealAccount(page);await page.getByRole('button',{name:'Hapus akun',exact:true}).click();await page.getByRole('button',{name:'Konfirmasi hapus akun',exact:true}).click();await revealAccount(page);await expect(page.getByText('Akun dihapus; workout tamu tetap ada',{exact:true})).toBeVisible();expect((await stale.request.get('/api/v1/workouts')).status()).toBe(401);
  await expect(page.getByText(/6 reps/).first()).toBeVisible();await login(page);const recreated=(await (await page.request.get('/api/v1/auth/me')).json()).user.id;expect(recreated).not.toBe(oldUser);expect(await history(page)).toEqual([]);await other.close();
 });
 test('merged unequal loads and original source timestamps survive PostgreSQL and another browser',async({page,context,browser})=>{
- await context.addCookies([{name:'fixture_subject',value:'fixture-merge',url:'http://127.0.0.1:8094'}]);await page.goto('/');await login(page);await page.getByLabel('Latihan untuk set manual').selectOption('bench-press');
+ await context.addCookies([{name:'fixture_subject',value:'fixture-merge',url:'http://127.0.0.1:8094'}]);await page.goto('/');await login(page);await startEmptyWorkout(page);await page.getByLabel('Latihan untuk set manual').selectOption('bench-press');
  for(const [reps,kg]of [['10','40'],['8','50']]){await page.getByLabel('Reps manual',{exact:true}).fill(reps);await page.getByLabel('Beban kg',{exact:true}).fill(kg);await page.getByRole('button',{name:'Catat set manual',exact:true}).click();}
  await page.getByRole('button',{name:'Mode log',exact:true}).click();await page.getByLabel('Gabung set 1 Flat barbell bench press').check();await page.getByLabel('Gabung set 2 Flat barbell bench press').check();await page.getByRole('button',{name:'Gabungkan set terpilih',exact:true}).click();await page.getByRole('button',{name:'Selesaikan workout',exact:true}).click();await expect.poll(async()=>(await history(page))[0]?.status).toBe('completed');
  const rows=await history(page);expect(rows[0].exercises[0].sets).toHaveLength(1);const sources=rows[0].exercises[0].sets[0].merged_from;expect(sources).toHaveLength(2);expect(sources.map((s:any)=>Number(s.load_kg))).toEqual([40,50]);expect(sources.every((s:any)=>s.source_started_at&&s.source_last_rep_at)).toBe(true);
@@ -63,13 +65,28 @@ test('merged unequal loads and original source timestamps survive PostgreSQL and
 });
 
 test('four bilateral cable exercises sync one-stack volume and retain all labels across browsers',async({page,context,browser})=>{
- await context.addCookies([{name:'fixture_subject',value:'fixture-cable',url:'http://127.0.0.1:8094'}]);await page.goto('/');await login(page);
+ await context.addCookies([{name:'fixture_subject',value:'fixture-cable',url:'http://127.0.0.1:8094'}]);await page.goto('/');await login(page);await startEmptyWorkout(page);
  for(const id of cableExercises){await page.getByLabel('Latihan untuk set manual').selectOption(id);await page.getByLabel('Reps manual',{exact:true}).fill('10');await page.getByLabel('Beban kg',{exact:true}).fill('40');await page.getByRole('button',{name:'Catat set manual',exact:true}).click();}
  await page.getByRole('button',{name:'Selesaikan workout',exact:true}).click();await expect.poll(async()=>(await history(page))[0]?.status).toBe('completed');
  const rows=await history(page);expect(rows).toHaveLength(1);expect(rows[0].exercises.map((e:any)=>e.exercise_id)).toEqual(cableExercises.map(id=>exerciseCatalog[id].uuid));
  for(const e of rows[0].exercises){expect(e.sets).toHaveLength(1);expect(Number(e.sets[0].load_kg)).toBe(40);expect(e.sets[0].implement_count).toBe(1);expect(e.sets[0].label_source).toBe('manual');}
- const catalogue=await page.request.get('/api/v1/exercises');expect(await catalogue.json()).toHaveLength(9);
+ const catalogue=await page.request.get('/api/v1/exercises');expect(await catalogue.json()).toHaveLength(1333);
  const other=await browser.newContext();await other.addCookies([{name:'fixture_subject',value:'fixture-cable',url:'http://127.0.0.1:8094'}]);const p=await other.newPage();await p.goto('http://127.0.0.1:8093');await login(p);await p.getByRole('button',{name:'Muat riwayat akun',exact:true}).click();await p.getByRole('button',{name:'Lihat workout',exact:true}).first().click();
  await expect(p.getByText('Total set: 4',{exact:true})).toBeVisible();await expect(p.getByText('Total reps: 40',{exact:true})).toBeVisible();await expect(p.getByText('Volume diketahui: 1600 kg',{exact:true})).toBeVisible();
  await p.getByRole('button',{name:'Mode log',exact:true}).click();for(const id of cableExercises)await expect(p.getByRole('heading',{name:exerciseCatalog[id].label,exact:true})).toBeVisible();await other.close();
+});
+
+test('imported exercise can be manually logged and synced with its stable catalog ID',async({page,context})=>{
+ await context.addCookies([{name:'fixture_subject',value:'fixture-imported-catalog',url:'http://127.0.0.1:8094'}]);
+ await page.goto('/');await login(page);await startEmptyWorkout(page);
+ await page.getByRole('button',{name:'Add Exercise'}).click();
+ await page.getByLabel('Search exercises').fill('3/4 sit-up');
+ await page.getByRole('button',{name:'3/4 sit-up',exact:true}).click();
+ await expect(page.getByRole('button',{name:'Open camera for 3/4 sit-up'})).toHaveCount(0);
+ await page.getByLabel('Latihan untuk set manual').selectOption('dataset:0001');
+ await page.getByLabel('Reps manual').fill('12');await page.getByLabel('Beban kg',{exact:true}).fill('15');
+ await page.getByRole('button',{name:'Catat set manual',exact:true}).click();
+ await page.getByRole('button',{name:'Selesaikan workout',exact:true}).click();
+ await expect.poll(async()=>(await history(page))[0]?.exercises?.[0]?.exercise_id).toBe(exerciseCatalog['dataset:0001'].uuid);
+ await expect(page.getByText('Volume diketahui: 180 kg',{exact:true})).toBeVisible();
 });

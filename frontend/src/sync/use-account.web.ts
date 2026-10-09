@@ -16,7 +16,8 @@ export function useAccount(){
  const refresh=async()=>{
   try{const [records,bindings]=await Promise.all([store.current.list(),store.current.bindings()]);if(!alive.current)return;setGuests(records.filter(r=>r.snapshot.finishedAt!==null&&!bindings.some(b=>b.workoutId===r.id)).length);setConflicts(userRef.current?(await store.current.jobs(userRef.current.id)).filter(j=>j.status==='conflict'):[]);}catch{if(alive.current)setStatus('Penyimpanan sinkronisasi tidak tersedia');}
  };
- const flush=async()=>{
+ const flushInFlight=useRef<Promise<void>|null>(null);
+ const runFlush=async()=>{
   if(busy.current||!userRef.current)return;
   busy.current=true;if(alive.current)setWorking(true);const expected=userRef.current.id;let succeeded=false;
   try{
@@ -46,6 +47,11 @@ export function useAccount(){
     }catch{if(alive.current)setStatus('Sinkronisasi tertunda; hasil tetap tersimpan lokal');}
    }
   }
+ };
+ const flush=():Promise<void>=>{
+  if(flushInFlight.current)return flushInFlight.current.then(()=>flush());
+  const running=runFlush();flushInFlight.current=running;
+  return running.finally(()=>{if(flushInFlight.current===running)flushInFlight.current=null;});
  };
  useEffect(()=>{
   alive.current=true;

@@ -1,4 +1,4 @@
-import type {ExerciseId} from '../domain/workout';
+import type {SupportedExerciseId} from '../domain/exercises';
 import {allowsSingleSide,type CameraView} from '../domain/camera-view';
 import {isCableExercise} from '../domain/exercises';
 import type {PoseFrame} from './pose-phase-adapter';
@@ -35,12 +35,12 @@ const upright:GroupName[]=['shoulder','hip','knee','ankle'];
 const upper:GroupName[]=['shoulder','elbow','wrist','hip'];
 const all:GroupName[]=['shoulder','elbow','wrist','hip','knee','ankle'];
 
-function guideFor(exercise:ExerciseId|null):FramingGuide{
+function guideFor(exercise:SupportedExerciseId|null):FramingGuide{
   if(exercise==='dumbbell-curl')return 'upper';
   if(exercise==='push-up'||exercise==='bench-press')return 'horizontal';
   return 'full';
 }
-function groupsFor(exercise:ExerciseId|null):GroupName[]{
+function groupsFor(exercise:SupportedExerciseId|null):GroupName[]{
   if(exercise==='squat'||exercise===null)return upright;
   if(exercise==='dumbbell-curl'||exercise==='push-up'||exercise==='bench-press')return upper;
   return all;
@@ -53,7 +53,7 @@ export function poseOverlayViewBox(aspectRatio:number):{width:number;height:numb
   return {width:1000,height:1000/safe};
 }
 
-export function assessFraming(frame:PoseFrame|null,exercise:ExerciseId|null,view:CameraView):FramingAssessment{
+export function assessFraming(frame:PoseFrame|null,exercise:SupportedExerciseId|null,view:CameraView):FramingAssessment{
   const guide=guideFor(exercise);
   if(!frame||frame.landmarks.length!==33)return searching(guide);
   const landmarks=frame.landmarks;

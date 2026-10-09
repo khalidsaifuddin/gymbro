@@ -6,6 +6,10 @@ Tahap 7 menambahkan pilihan sudut yang terkunci selama sesi, recovery konfiguras
 
 Follow-up overlay sendi dan framing kamera direncanakan pada `implementation-camera-framing-overlay.md`. Overlay memakai landmark lokal yang sudah ada dan tidak menjadi bukti akurasi pengenalan.
 
+Refinement alur workout/routine/explore serta kamera satu layar direncanakan pada `implementation-workout-routines-ui.md`. Routine browser-local adalah template; hasil sesi tetap disimpan pada aggregate workout yang ada.
+
+Revisi setelah live testing meliputi sensitivitas squat/curl, katalog teks 1.324 latihan, scrolling, sudut kamera per latihan, dan SAKA cyan. Cakupan, skenario penerimaan, urutan, dan perintah validasi ada di `implementation-live-feedback.md`; hasil otomatis dan batas uji perangkat ada di `validation-live-feedback.md`.
+
 ## Cara kerja setiap tahap
 
 Sebelum menulis kode, uraikan task yang sedang dikerjakan beserta skenario penerimaan, file terdampak, dan perintah validasinya. Ikuti RED → GREEN → REFACTOR dan simpan hasil tes sebenarnya. Dokumentasi tidak memerlukan tes aplikasi palsu.

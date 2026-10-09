@@ -1,6 +1,7 @@
-import type { ExerciseId, Observation, Phase } from '../domain/workout';
+import type { Observation, Phase } from '../domain/workout';
 import {allowsSingleSide,isCameraView,type CameraView} from '../domain/camera-view';
 import {isCableExercise} from '../domain/exercises';
+import type {SupportedExerciseId} from '../domain/exercises';
 import {CablePoseAdapter} from './cable-pose-adapter';
 import {valid,angle} from './pose-geometry';
 
@@ -13,7 +14,7 @@ export type PoseFrame = {
 };
 export type PoseResult = { observation: Observation; reason: string | null };
 export type PoseOptions = {
-  exercise: ExerciseId;
+  exercise: SupportedExerciseId;
   cameraView?: CameraView;
   smoothingAlpha?: number;
   stableFrames?: number;
@@ -32,7 +33,7 @@ export class PosePhaseAdapter {
   private cable: CablePoseAdapter|null=null;
 
   constructor(options: PoseOptions) {
-    this.options = {smoothingAlpha: .5, stableFrames: 3, stableMs: 120, cameraView:'auto', ...options};
+    this.options = {smoothingAlpha: .65, stableFrames: 2, stableMs: 80, cameraView:'auto', ...options};
     const {smoothingAlpha, stableFrames, stableMs} = this.options;
     if (!isCameraView(this.options.cameraView) || !Number.isFinite(smoothingAlpha) || smoothingAlpha <= 0 || smoothingAlpha > 1 ||
         !Number.isSafeInteger(stableFrames) || stableFrames < 1 || !Number.isFinite(stableMs) || stableMs < 0) {
@@ -122,8 +123,8 @@ export class PosePhaseAdapter {
     if (exercise === 'machine-shoulder-press' || exercise === 'bench-press') {
       return degrees <= 105 ? 'ready' : degrees >= 155 ? 'peak' : 'moving';
     }
-    const ready = exercise === 'dumbbell-curl' ? 150 : 155;
-    const peak = exercise === 'dumbbell-curl' ? 65 : exercise === 'push-up' ? 100 : 105;
+    const ready = exercise === 'dumbbell-curl' ? 145 : exercise === 'squat' ? 150 : 155;
+    const peak = exercise === 'dumbbell-curl' ? 90 : exercise === 'squat' ? 125 : exercise === 'push-up' ? 100 : 105;
     return degrees >= ready ? 'ready' : degrees <= peak ? 'peak' : 'moving';
   }
 

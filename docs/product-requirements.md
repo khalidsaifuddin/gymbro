@@ -12,7 +12,7 @@
 - Arsitektur backend mengacu pada pola backend https://github.com/khalidsaifuddin/widyaprada/tree/main/backend. Stack MVP: Gin, GORM, PostgreSQL, dan migrasi database berversi. Redis tidak diperlukan pada MVP. Domain dan use case tidak bergantung pada Gin/GORM.
 - Gerakan MVP awal: squat, push-up, dumbbell biceps curl, seated machine shoulder press, dan flat barbell bench press. Batch tahap 8 menambah lat pulldown ke depan dada, seated cable row, rope face pull, dan straight-arm cable pulldown bilateral; total sembilan. Behind-the-neck, single-arm cable, chest-supported machine row, incline/decline/dumbbell bench press berada di luar batch ini.
 - Satu orang per sesi, kamera diam, dan bagian tubuh yang diperlukan terlihat jelas. Aplikasi memberi panduan posisi kamera sesuai latihan dan meminta penyesuaian saat pandangan terhalang.
-- Posisi kamera dipilih sebelum sesi workout dan tetap sampai sesi selesai, termasuk saat istirahat dan pergantian latihan. Perpindahan posisi memerlukan sesi baru. Pilihan beberapa sudut direncanakan; dukungan otomatis tiap kombinasi sudut/latihan harus divalidasi, bukan diasumsikan dari kemampuan MediaPipe.
+- Posisi kamera dipilih per latihan. Sudut suatu latihan dapat diubah saat berpindah latihan atau sebelum set berikutnya; perubahan sudut saat set aktif harus mengakhiri set dan membuang siklus parsial. Pilihan dipulihkan setelah reload. Dukungan otomatis tiap kombinasi sudut/latihan harus divalidasi, bukan diasumsikan dari kemampuan MediaPipe.
 - Deteksi berjalan langsung di browser; video tidak diunggah ke server. Backend menyimpan hasil workout.
 - Perekaman video mati secara default dan harus diaktifkan sebelum workout. Setelah workout, pengguna dapat menyimpan video ke perangkat atau membuangnya; MVP tidak menyimpan video di cloud.
 - Berat beban dimasukkan pengguna, bukan ditentukan dari kamera.
@@ -42,6 +42,11 @@
 - Pengguna dapat menghapus workout atau akun beserta riwayat server. Video yang telah diunduh tetap dikelola pengguna. Hasil tamu berada di browser dan dapat hilang saat data situs dibersihkan.
 - PostgreSQL dibagi menjadi `public` untuk transaksi, `ref` untuk reference/master, dan `log` untuk log/activity yang siap dipartisi.
 - Selalu mulai implementasi dari implementation plan dan gunakan TDD: RED, GREEN, REFACTOR.
+- Beranda workout menyediakan sesi kosong, pembuatan routine, dan penjelajahan latihan. Routine dapat dibuat, diedit, dihapus, dan dimulai menjadi sesi baru; tiap latihan memiliki target set kg/reps yang dapat diedit. Pada rilis UI ini routine disimpan di browser, tanpa klaim sinkronisasi akun.
+- Sesi aktif menampilkan latihan berurutan serta target/hasil per set. Tombol pada tiap kartu latihan membuka tampilan kamera satu viewport dengan preview, overlay sendi, hitungan set/reps, status deteksi, dan kontrol pause/close; keluar dari kamera tidak menghapus reps terverifikasi.
+- Setelah uji gerakan langsung, fase squat dan dumbbell curl perlu lebih responsif terhadap siklus lengkap beramplitudo sedang tanpa menghitung gerakan parsial, jitter, atau curl satu tangan. Ambang prototipe harus diuji dengan workout berlabel pada perangkat nyata.
+- Explore, routine, dan pencatatan manual memuat seluruh 1.324 catatan metadata/instruksi berbahasa Inggris dari `hasaneyldrm/exercises-dataset` di samping sembilan latihan Gymbro. Tombol kamera hanya untuk sembilan latihan dengan deteksi yang diimplementasikan. Gambar dan GIF Gym visual tidak diimpor karena perlu lisensi terpisah; identitas sumber dan MIT tetap dicantumkan.
+- Halaman browser normal dapat discroll pada ponsel dan desktop; layar kamera saja tetap satu viewport. Tema web menggunakan preset cyan SAKA.
 
 ## Status dan validasi
 

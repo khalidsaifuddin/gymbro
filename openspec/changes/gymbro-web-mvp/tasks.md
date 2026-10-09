@@ -76,6 +76,22 @@ Checkbox mencatat pekerjaan yang telah selesai atau masih terbuka. Ikuti `AGENTS
 - [x] 8.3 GREEN/REFACTOR: tampilkan skeleton, bingkai, dan pesan framing lokal tanpa mengubah recognizer atau mengirim pose.
 - [x] 8.4 Jalankan unit/type/build/browser dan pisahkan bukti sintetis dari uji kamera nyata.
 
+## 9. Alur workout, routine, explore, dan kamera satu layar
+
+- [x] 9.1 Catat plan, keputusan browser-local, mapping layar referensi, dan acceptance scenarios sebelum kode.
+- [x] 9.2 RED → GREEN → REFACTOR: routine CRUD lokal dan salinan target sesi yang bertahan setelah reload/recovery tanpa mengubah routine sumber.
+- [x] 9.3 RED → GREEN → REFACTOR: beranda, sesi kosong, routine editor/start, explore/picker, dan kartu latihan/set yang berbagi aggregate workout.
+- [x] 9.4 RED → GREEN → REFACTOR: kamera dari tiap kartu memakai viewport penuh dengan skeleton, hitungan, status, dan kontrol tanpa scroll serta mempertahankan data saat kembali.
+- [x] 9.5 Validasi unit/type/build/browser, regresi account/recording/offline, dan dokumentasikan batas bukti perangkat/akurasi.
+
+## 10. Revisi hasil uji langsung dan katalog latihan
+
+- [x] 10.1 Perbarui plan, spesifikasi, sumber/lisensi dataset, dan skenario penerimaan sebelum kode.
+- [x] 10.2 RED → GREEN → REFACTOR: tingkatkan respons squat/curl untuk siklus lengkap beramplitudo sedang tanpa menambah false reps pada jitter, parsial, satu tangan, dan tracking loss.
+- [x] 10.3 RED → GREEN → REFACTOR: impor 1.324 metadata/instruksi MIT, katalog/Explore/routine/manual, sinkronisasi latihan manual dengan seed PostgreSQL, dan sembunyikan kamera pada latihan tanpa deteksi.
+- [x] 10.4 RED → GREEN → REFACTOR: sudut kamera per latihan dengan recovery/kompatibilitas legacy, scrolling halaman normal, dan tema SAKA cyan.
+- [x] 10.5 Jalankan unit, typecheck, build, browser, PostgreSQL/account sync; catat batas validasi otomatis versus akurasi perangkat nyata.
+
 ## Workflow follow-up
 
 - Tinjau hasil implementasi dan bukti validasi sebelum archive change serta merge spesifikasi delta menjadi spesifikasi utama.

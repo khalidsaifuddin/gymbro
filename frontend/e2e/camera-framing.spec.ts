@@ -1,12 +1,13 @@
 import {test,expect} from '@playwright/test';
 import {pose} from '../src/detection/fixtures/pose';
 import {injectFrames} from './fixtures/pose-replay';
+import {openCameraFor,startEmptyWorkout} from './fixtures/workout-ui';
 
 test('preview shows live curl joints, missing-wrist guidance, and clears on pause',async({page})=>{
   const hidden=pose('dumbbell-curl',170);hidden[15].visibility=.1;
   await injectFrames(page,Array.from({length:100},()=>hidden));
   await page.goto('http://127.0.0.1:8081/');
-  await page.getByLabel('Profil kamera',{exact:true}).selectOption('dumbbell-curl');
+  await startEmptyWorkout(page);await openCameraFor(page,'dumbbell-curl');
   const overlay=page.getByTestId('camera-framing-overlay');
   await expect(overlay).toBeVisible();
   await expect(page.getByTestId('camera-framing-status')).toContainText('Masuk ke bingkai');
@@ -23,7 +24,7 @@ test('framed curl shows bilateral skeleton without changing the rep count',async
   const valid=pose('dumbbell-curl',170);
   await injectFrames(page,Array.from({length:100},()=>valid));
   await page.goto('http://127.0.0.1:8081/');
-  await page.getByLabel('Profil kamera',{exact:true}).selectOption('dumbbell-curl');
+  await startEmptyWorkout(page);await openCameraFor(page,'dumbbell-curl');
   await page.getByRole('button',{name:'Aktifkan kamera',exact:true}).click();
   await expect(page.getByTestId('camera-framing-status')).toContainText('Sendi terlihat');
   const overlay=page.getByTestId('camera-framing-overlay');

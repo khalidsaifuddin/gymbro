@@ -1,12 +1,15 @@
 import type {ExerciseId,SessionSnapshot} from '../domain/workout';
 import {validateSnapshot} from '../domain/workout-snapshot';
-import {exerciseIds} from '../domain/exercises';
+import {exerciseIds,isSupportedExerciseId,type SupportedExerciseId} from '../domain/exercises';
 import {isCameraView,type CameraView} from '../domain/camera-view';
+import {validatePlan,type PlannedExercise} from '../domain/session-plan';
 
 export type WorkoutPreferences={
  profile:'auto'|ExerciseId;restSeconds:Partial<Record<ExerciseId,number>>;
  manualExercise:ExerciseId;manualReps:string;manualLoad:string;
  cameraView?:CameraView;
+ cameraViews?:Partial<Record<SupportedExerciseId,CameraView>>;
+ exercisePlan?:PlannedExercise[];
 };
 export type LocalWorkout={id:string;revision:number;snapshot:SessionSnapshot;preferences:WorkoutPreferences};
 const exercises:readonly string[]=exerciseIds;
@@ -15,11 +18,13 @@ function validateRecord(value:LocalWorkout):LocalWorkout {
  if(!value||typeof value.id!=='string'||!value.id||!Number.isSafeInteger(value.revision)||value.revision<0||
    Object.keys(value).some(k=>!['id','revision','snapshot','preferences'].includes(k)))return fail();
  const p=value.preferences;
- if(!p||Object.keys(p).some(k=>!['profile','restSeconds','manualExercise','manualReps','manualLoad','cameraView'].includes(k))||
+ if(!p||Object.keys(p).some(k=>!['profile','restSeconds','manualExercise','manualReps','manualLoad','cameraView','cameraViews','exercisePlan'].includes(k))||
    (p.cameraView!==undefined&&!isCameraView(p.cameraView))||
+   (p.cameraViews!==undefined&&(typeof p.cameraViews!=='object'||p.cameraViews===null||Array.isArray(p.cameraViews)||Object.entries(p.cameraViews).some(([id,view])=>!isSupportedExerciseId(id)||!isCameraView(view))))||
    !['auto',...exercises].includes(p.profile)||!exercises.includes(p.manualExercise)||
    typeof p.manualReps!=='string'||typeof p.manualLoad!=='string'||!p.restSeconds||
    Object.entries(p.restSeconds).some(([k,v])=>!exercises.includes(k)||!Number.isSafeInteger(v)||v!<0||v!>3600))return fail();
+ if(p.exercisePlan!==undefined)validatePlan(p.exercisePlan);
  return {...structuredClone(value),snapshot:validateSnapshot(value.snapshot)};
 }
 export class WorkoutStore {
@@ -51,6 +56,11 @@ export class WorkoutStore {
   const record=validateRecord(value),db=await this.open();
   return this.mutate(db,record.id,expectedRevision,(store,previous)=>{
    if(previous&&(previous.preferences.cameraView??'auto')!==(record.preferences.cameraView??'auto'))throw new Error('Camera view is fixed for this workout session');
+   const active=previous?.snapshot.sets.find(set=>set.endedAt===null);
+   if(active&&isSupportedExerciseId(active.exercise)&&
+      (previous?.preferences.cameraViews?.[active.exercise]??previous?.preferences.cameraView??'auto')!==
+      (record.preferences.cameraViews?.[active.exercise]??record.preferences.cameraView??'auto'))
+    throw new Error('Camera view is fixed during an active set');
    store.put({...record,revision:expectedRevision+1});
   })
    .then(()=>({...record,revision:expectedRevision+1}));

@@ -1,7 +1,7 @@
 import {useState} from 'react';
-import type {ExerciseId} from '../domain/workout';
+import type {SupportedExerciseId} from '../domain/exercises';
 import {exerciseLabels} from '../detection/camera-guides';
-export default function ExerciseGuide({exercise}:{exercise:ExerciseId}) {
+export default function ExerciseGuide({exercise}:{exercise:SupportedExerciseId}) {
  const [animated,setAnimated]=useState(()=>!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
  return <div style={{background:'#edf5ff',borderRadius:12,padding:12}}>
   <object data-testid="exercise-animation" aria-label={`Panduan ${exerciseLabels[exercise]}`} type="image/svg+xml" data={`/exercises/${exercise}${animated?'':'-poses'}.svg`} style={{width:'100%',height:animated?240:200}}/>

@@ -3,21 +3,22 @@ import {validateSnapshot} from '../domain/workout-snapshot';
 import type {LocalWorkout} from '../storage/workout-store';
 import {exerciseCatalog} from '../domain/exercises';
 export const catalogIds=Object.fromEntries(Object.entries(exerciseCatalog).map(([id,e])=>[id,e.uuid])) as Record<ExerciseId,string>;
-export type Binding={workoutId:string;ownerId:string;serverRevision:number;occurrences:Record<ExerciseId,string>;deleted?:boolean;deleteRequested?:boolean};
+const catalogSlugs=new Map(Object.entries(catalogIds).map(([slug,id])=>[id,slug as ExerciseId]));
+export type Binding={workoutId:string;ownerId:string;serverRevision:number;occurrences:Partial<Record<ExerciseId,string>>;deleted?:boolean;deleteRequested?:boolean};
 export type SourceDTO={id:string;reps:number;detected_reps:number;load_kg:string|null;implement_count:number;source_ids:string[];merged_from:SourceDTO[];load_edited:boolean;label_source:string;raw_exercise_id?:string|null;source_exercise_id?:string;source_origin?:WorkoutSet['origin'];source_started_at?:string;source_ended_at?:string|null;source_last_rep_at?:string};
 export type SetDTO=SourceDTO&{position:number;rep_source:WorkoutSet['origin'];detected_exercise_id:string|null;recognition_status:string;started_at:string;ended_at:string|null;last_rep_at:string;rest_duration_ms:number};
 export type WorkoutDTO={id:string;revision:number;started_at:string;captured_at:string;finished_at:string|null;pause_intervals:{start:string;end:string|null}[];duration_ms:number;paused_duration_ms:number;rest_duration_ms:number;status:'active'|'paused'|'completed';exercises:{id:string;exercise_id:string;position:number;notes:string;rest_target_seconds:number;sets:SetDTO[]}[]};
 export type Mutation={account_id:string;mutation_id:string;workout_id:string;base_revision:number;operation:'upsert'|'delete';occurred_at:string;workout?:WorkoutDTO};
 export type Outcome={mutation_id:string;workout_id:string;revision:number;deleted:boolean;workout?:WorkoutDTO};
-export function newBinding(workoutId:string,ownerId:string):Binding{return {workoutId,ownerId,serverRevision:0,occurrences:Object.fromEntries(Object.keys(catalogIds).map(x=>[x,crypto.randomUUID()])) as Record<ExerciseId,string>};}
+export function newBinding(workoutId:string,ownerId:string):Binding{return {workoutId,ownerId,serverRevision:0,occurrences:{}};}
 const iso=(t:number)=>new Date(t).toISOString();
 const millis=(t:string)=>{const n=Date.parse(t);if(!Number.isFinite(n))throw new Error('Invalid server timestamp');return n;};
-function slug(id:string):ExerciseId{const found=Object.entries(catalogIds).find(x=>x[1]===id)?.[0];if(!found)throw new Error('Unsupported server exercise');return found as ExerciseId;}
+function slug(id:string):ExerciseId{const found=catalogSlugs.get(id);if(!found)throw new Error('Unsupported server exercise');return found;}
 function source(s:WorkoutSet):SourceDTO{return {id:s.id,reps:s.reps,detected_reps:s.detectedReps,load_kg:s.loadKg===null?null:s.loadKg.toFixed(3),implement_count:s.implementCount,source_ids:s.sourceIds,merged_from:s.mergedFrom?.map(source)??[],load_edited:s.loadEdited??false,label_source:s.labelSource??'unknown',raw_exercise_id:s.rawExercise?catalogIds[s.rawExercise]:null,source_exercise_id:catalogIds[s.exercise],source_origin:s.origin,source_started_at:iso(s.startedAt),source_ended_at:s.endedAt===null?null:iso(s.endedAt),source_last_rep_at:iso(s.lastRepAt)};}
 export function toDTO(local:LocalWorkout,binding:Binding):WorkoutDTO{
  const snapshot=validateSnapshot(local.snapshot),summary=WorkoutSession.restore(snapshot,{clock:()=>snapshot.savedAt,idFactory:()=>{throw new Error('Unexpected ID');}}).summary();
  const exercises:WorkoutDTO['exercises']=[];
- snapshot.sets.forEach((s,position)=>{let e=exercises.find(x=>x.exercise_id===catalogIds[s.exercise]);if(!e){e={id:binding.occurrences[s.exercise],exercise_id:catalogIds[s.exercise],position:exercises.length,notes:'',rest_target_seconds:local.preferences.restSeconds[s.exercise]??120,sets:[]};exercises.push(e);}
+ snapshot.sets.forEach((s,position)=>{let e=exercises.find(x=>x.exercise_id===catalogIds[s.exercise]);if(!e){e={id:binding.occurrences[s.exercise]??=crypto.randomUUID(),exercise_id:catalogIds[s.exercise],position:exercises.length,notes:'',rest_target_seconds:local.preferences.restSeconds[s.exercise]??120,sets:[]};exercises.push(e);}
  const raw=s.labelSource==='automatic'&&s.rawExercise?catalogIds[s.rawExercise]:null;
  e.sets.push({...source(s),position,rep_source:s.origin,detected_exercise_id:raw,recognition_status:raw?'known':s.labelSource==='manual'?'manual':'unknown',started_at:iso(s.startedAt),ended_at:s.endedAt===null?null:iso(s.endedAt),last_rep_at:iso(s.lastRepAt),rest_duration_ms:0});});
  return {id:local.id,revision:binding.serverRevision,started_at:iso(snapshot.startedAt),captured_at:iso(snapshot.savedAt),finished_at:snapshot.finishedAt===null?null:iso(snapshot.finishedAt),pause_intervals:snapshot.pauses.map(p=>({start:iso(p.start),end:p.end===null?null:iso(p.end)})),duration_ms:summary.durationMs,paused_duration_ms:summary.pausedDurationMs,rest_duration_ms:summary.restDurationMs,status:snapshot.finishedAt!==null?'completed':snapshot.pauses.at(-1)?.end===null?'paused':'active',exercises};

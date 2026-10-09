@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { WorkoutSession, type ExerciseId } from '../domain/workout';
+import { WorkoutSession } from '../domain/workout';
+import type {SupportedExerciseId} from '../domain/exercises';
 import { PosePhaseAdapter, type PoseOptions } from './pose-phase-adapter';
 
 import { exercises, readyAngle, peakAngle, pose } from './fixtures/pose';
 
-function create(exercise: ExerciseId, extra: Partial<PoseOptions> = {}) {
+function create(exercise: SupportedExerciseId, extra: Partial<PoseOptions> = {}) {
   return new PosePhaseAdapter({exercise, smoothingAlpha: 1, ...extra});
 }
-function hold(adapter: PosePhaseAdapter, exercise: ExerciseId, angle: number, start = 0, rightAngle = angle) {
+function hold(adapter: PosePhaseAdapter, exercise: SupportedExerciseId, angle: number, start = 0, rightAngle = angle) {
   const results = [0, 60, 120].map(offset => adapter.process({timestampMs: start+offset, landmarks: pose(exercise, angle, rightAngle)}));
   return results.at(-1)!;
 }
@@ -36,18 +37,37 @@ describe('profil pose lima gerakan', () => {
 });
 
 describe('stabilitas dan tracking', () => {
+  it.each([
+    ['squat',170,120],
+    ['dumbbell-curl',170,85],
+  ] as const)('%s counts a moderate complete range with production timing', (exercise,ready,peak) => {
+    let now=0;const workout=new WorkoutSession({clock:()=>now,idFactory:()=>`set-${now}`});
+    const adapter=new PosePhaseAdapter({exercise});
+    for(const angle of [ready,peak,ready])for(let frame=0;frame<5;frame++){
+      workout.observe(adapter.process({timestampMs:now,landmarks:pose(exercise,angle)}).observation);now+=100;
+    }
+    expect(workout.summary().totalReps).toBe(1);
+  });
+  it.each(['squat','dumbbell-curl'] as const)('%s ignores near-ready jitter and a partial cycle', exercise=>{
+    let now=0;const workout=new WorkoutSession({clock:()=>now,idFactory:()=>`set-${now}`});
+    const adapter=new PosePhaseAdapter({exercise});
+    for(const angle of [170,140,170,exercise==='squat'?120:85])for(let frame=0;frame<5;frame++){
+      workout.observe(adapter.process({timestampMs:now,landmarks:pose(exercise,angle)}).observation);now+=100;
+    }
+    expect(workout.summary().totalReps).toBe(0);
+  });
   it('satu frame fleksi tidak mencapai peak', () => {
     const adapter = create('dumbbell-curl');
     hold(adapter, 'dumbbell-curl', 170);
     expect(adapter.process({timestampMs: 180, landmarks: pose('dumbbell-curl', 55)}).observation.phase).toBe('moving');
     expect(hold(adapter, 'dumbbell-curl', 170, 240).observation.phase).toBe('ready');
   });
-  it('tiga frame tanpa 120 ms tetap belum stabil', () => {
+  it('dua frame tanpa 80 ms tetap belum stabil', () => {
     const adapter = create('squat');
-    for (const timestampMs of [0, 10, 20]) {
+    for (const timestampMs of [0, 20, 40]) {
       expect(adapter.process({timestampMs, landmarks: pose('squat', 170)}).observation.phase).toBe('moving');
     }
-    expect(adapter.process({timestampMs: 120, landmarks: pose('squat', 170)}).observation.phase).toBe('ready');
+    expect(adapter.process({timestampMs: 80, landmarks: pose('squat', 170)}).observation.phase).toBe('ready');
   });
   it('EMA mengurangi perubahan sudut mendadak', () => {
     const adapter = create('dumbbell-curl', {smoothingAlpha: .25, stableFrames: 1, stableMs: 0});
@@ -56,7 +76,7 @@ describe('stabilitas dan tracking', () => {
   });
   it('sudut memakai rasio aspek gambar agar video lebar tidak mengubah fase', () => {
     const adapter=create('dumbbell-curl', {stableFrames: 1, stableMs: 0});
-    const points=pose('dumbbell-curl', 70).map(point => ({...point, x: point.x/2}));
+    const points=pose('dumbbell-curl', 110).map(point => ({...point, x: point.x/2}));
     const result=adapter.process({timestampMs: 0, landmarks: points, aspectRatio: 2});
     expect(result.observation).toMatchObject({visible: true, phase: 'moving'});
   });

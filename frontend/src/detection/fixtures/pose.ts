@@ -1,7 +1,8 @@
 import type { ExerciseId } from '../../domain/workout';
+import type {SupportedExerciseId} from '../../domain/exercises';
 import type { Landmark } from '../pose-phase-adapter';
 
-export const exercises: ExerciseId[] = ['squat', 'push-up', 'dumbbell-curl', 'machine-shoulder-press', 'bench-press'];
+export const exercises: SupportedExerciseId[] = ['squat', 'push-up', 'dumbbell-curl', 'machine-shoulder-press', 'bench-press'];
 export const readyAngle = (exercise: ExerciseId) => exercise.includes('press') ? 90 : 170;
 export const peakAngle = (exercise: ExerciseId) => exercise.includes('press') ? 170 : exercise === 'dumbbell-curl' ? 55 : 90;
 

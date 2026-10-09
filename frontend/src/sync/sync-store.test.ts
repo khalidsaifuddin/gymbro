@@ -39,13 +39,13 @@ it('rejects unknown server exercises atomically instead of overwriting local his
  await expect(store.receive(owner,[remote])).rejects.toThrow(/unsupported/i);expect(await store.list()).toEqual([local]);expect((await store.bindings())[0].serverRevision).toBe(1);await store.close();
 });
 it('keeps local camera configuration out of API payloads and preserves it across history and conflict replacement',async()=>{
- const store=new SyncStore(new IDBFactory(),'test');const value={...record(),preferences:{...record().preferences,cameraView:'rear-left' as const}};
+ const store=new SyncStore(new IDBFactory(),'test');const value={...record(),preferences:{...record().preferences,cameraView:'rear-left' as const,cameraViews:{squat:'side-left' as const,'dumbbell-curl':'front-right' as const}}};
  const local=await store.save(value,0);await store.enqueue(local,owner,true);const job=(await store.claim(owner))!;
  expect(JSON.stringify(job.envelope)).not.toContain('cameraView');
  const remote={...job.envelope.workout!,revision:1};await store.acknowledge(job,{mutation_id:job.mutationId,workout_id:local.id,revision:1,deleted:false});
- await store.receive(owner,[{...remote,revision:2}]);let latest=(await store.list())[0];expect(latest.preferences.cameraView).toBe('rear-left');
+ await store.receive(owner,[{...remote,revision:2}]);let latest=(await store.list())[0];expect(latest.preferences.cameraView).toBe('rear-left');expect(latest.preferences.cameraViews).toEqual(value.preferences.cameraViews);
  await store.enqueue(latest,owner);const next=(await store.claim(owner))!;await store.markConflict(next,{...remote,revision:3});
- await store.resolve(owner,local.id,'server');latest=(await store.list())[0];expect(latest.preferences.cameraView).toBe('rear-left');await store.close();
+ await store.resolve(owner,local.id,'server');latest=(await store.list())[0];expect(latest.preferences.cameraView).toBe('rear-left');expect(latest.preferences.cameraViews).toEqual(value.preferences.cameraViews);await store.close();
 });
 it('retains the exact in-flight envelope after reload and queues newer local edits only after acknowledgement',async()=>{
  const factory=new IDBFactory();let store=new SyncStore(factory,'test');let local=await store.save(record(),0);await store.enqueue(local,owner,true);
