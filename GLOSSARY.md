@@ -5,7 +5,7 @@ Gymbro mencatat latihan pengguna melalui kamera dan menyajikan hasil workout.
 ## Language
 
 **Repetisi (rep)**:
-Satu siklus gerakan latihan yang lengkap. Pada curl otomatis MVP, kedua tangan bergerak bersama dihitung sebagai satu repetisi; gerakan parsial atau siklus yang terputus tidak dihitung.
+Satu siklus gerakan latihan yang lengkap. Pada curl dan empat gerakan cable otomatis, kedua tangan bergerak bersama dihitung sebagai satu repetisi; gerakan parsial atau siklus yang terputus tidak dihitung.
 _Avoid_: Gerakan untuk menyebut satu repetisi
 
 **Set**:
@@ -33,11 +33,11 @@ Kumpulan hasil sesi workout pengguna yang telah disimpan untuk dilihat kembali.
 _Avoid_: Rekaman video untuk menyebut riwayat
 
 **Beban eksternal**:
-Berat alat atau resistansi yang dicatat pengguna dalam kg: barbell termasuk batang, dumbbell per dumbbell, dan mesin sesuai angka yang dipilih. Beban eksternal tidak mencakup perkiraan berat tubuh pengguna.
+Berat alat atau resistansi yang dicatat pengguna dalam kg: barbell termasuk batang, dumbbell per dumbbell, dan mesin sesuai angka yang dipilih pada satu weight stack. Beban eksternal tidak mencakup perkiraan berat tubuh pengguna.
 _Avoid_: Berat tubuh untuk menyebut beban eksternal
 
 **Volume latihan**:
-Jumlah beban eksternal dikali repetisi yang diselesaikan; untuk dua dumbbell yang bergerak bersama, beban keduanya dijumlahkan. Latihan bodyweight tanpa beban eksternal tidak memperoleh perkiraan volume dari berat tubuh.
+Jumlah beban eksternal dikali repetisi yang diselesaikan; untuk dua dumbbell yang bergerak bersama, beban keduanya dijumlahkan. Pada cable bilateral dengan satu weight stack, gunakan angka mesin satu kali, meskipun kedua tangan bergerak bersama. Latihan bodyweight tanpa beban eksternal tidak memperoleh perkiraan volume dari berat tubuh.
 _Avoid_: Durasi untuk menyebut volume
 
 **Istirahat antarset**:

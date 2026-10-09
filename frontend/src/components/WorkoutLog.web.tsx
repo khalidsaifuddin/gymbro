@@ -2,9 +2,10 @@ import {useEffect,useState} from 'react';
 import type {ExerciseId,WorkoutSession,WorkoutSet} from '../domain/workout';
 import type {LocalWorkout,WorkoutPreferences} from '../storage/workout-store';
 import {exerciseLabels} from '../detection/camera-guides';
+import {exerciseCatalog} from '../domain/exercises';
 
 export function loadLabel(id:ExerciseId):string {
- return id==='dumbbell-curl'?'Beban kg per dumbbell (2 dumbbell)':id==='bench-press'?'Beban kg total, termasuk bar':id==='machine-shoulder-press'?'Beban kg pada mesin':'Beban kg eksternal (opsional untuk bodyweight)';
+ return exerciseCatalog[id].loadLabel;
 }
 function SetRow({set,index,session,refresh,onError,selected,toggle,previous}:{set:WorkoutSet;index:number;session:WorkoutSession;refresh:()=>void;onError:(s:string)=>void;selected:boolean;toggle:()=>void;previous?:WorkoutSet}) {
  const [reps,setReps]=useState(String(set.reps)),[load,setLoad]=useState(set.loadKg===null?'':String(set.loadKg));

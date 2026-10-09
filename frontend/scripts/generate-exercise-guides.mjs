@@ -22,6 +22,18 @@ const definitions=[
  {id:'bench-press',label:'Flat barbell bench press',view:'Kamera samping bangku',equipment:'bench',
   ready:pose([64,155],[103,159],[191,164],[78,164],[105,125],[223,184],[223,212],[88,167],[116,125],[213,188],[213,212]),
   peak:pose([64,155],[103,159],[191,164],[106,111],[107,61],[223,184],[223,212],[116,112],[119,61],[213,188],[213,212])},
+ {id:'lat-pulldown',label:'Lat pulldown bilateral ke depan dada',view:'Kamera samping menyerong',equipment:'cable',pulley:[270,20],
+  ready:pose([140,55],[140,82],[145,149],[140,48],[145,20],[200,149],[205,212],[150,48],[157,20],[189,152],[194,212]),
+  peak:pose([140,55],[140,82],[145,149],[123,128],[166,108],[200,149],[205,212],[135,128],[178,108],[189,152],[194,212])},
+ {id:'seated-cable-row',label:'Seated cable row bilateral',view:'Kamera samping menyerong',equipment:'cable',pulley:[270,112],
+  ready:pose([125,55],[125,82],[126,149],[171,88],[217,94],[185,149],[207,212],[180,94],[226,100],[178,153],[198,212]),
+  peak:pose([125,55],[125,82],[126,149],[95,120],[151,139],[185,149],[207,212],[107,126],[162,145],[178,153],[198,212])},
+ {id:'face-pull',label:'Rope face pull bilateral',view:'Kamera depan menyerong',equipment:'cable',pulley:[270,66],
+  ready:pose([125,50],[100,82],[125,149],[161,85],[222,88],[108,180],[101,212],[191,88],[232,94],[142,180],[149,212],[150,82]),
+  peak:pose([125,50],[100,82],[125,149],[79,89],[114,65],[108,180],[101,212],[182,81],[139,65],[142,180],[149,212],[150,82])},
+ {id:'straight-arm-pulldown',label:'Straight-arm cable pulldown bilateral',view:'Kamera samping menyerong',equipment:'cable',pulley:[270,20],
+  ready:pose([116,50],[120,80],[120,149],[165,80],[210,80],[118,179],[114,212],[173,85],[218,85],[130,179],[126,212]),
+  peak:pose([116,50],[120,80],[120,149],[137,115],[154,150],[118,179],[114,212],[147,117],[164,152],[130,179],[126,212])},
 ];
 const anim=(name,a,b)=>`<animate attributeName="${name}" values="${a};${a};${b};${b};${a}" keyTimes="0;0.15;0.5;0.65;1" dur="3s" repeatCount="indefinite"/>`;
 function line(a,b,c,d,animated,color='#1268c8',width=9){return `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="${color}" stroke-width="${width}" stroke-linecap="round">${animated||''}</line>`;}
@@ -35,9 +47,18 @@ function figure(def,moving=false,peak=false){
  if(def.equipment==='dumbbells')for(const key of ['hand','hand2'])svg+=line(a[key][0]-13,a[key][1],a[key][0]+13,a[key][1],moving?anim('x1',a[key][0]-13,b[key][0]-13)+anim('x2',a[key][0]+13,b[key][0]+13)+anim('y1',a[key][1],b[key][1])+anim('y2',a[key][1],b[key][1]):'','#15233d',10);
  if(def.equipment==='bench')svg+=line(75,a.hand[1],142,a.hand[1],moving?anim('y1',a.hand[1],b.hand[1])+anim('y2',a.hand[1],b.hand[1]):'','#15233d',7);
  if(def.equipment==='machine')for(const key of ['hand','hand2'])svg+=line(a[key][0]-8,a[key][1],a[key][0]+8,a[key][1],moving?anim('x1',a[key][0]-8,b[key][0]-8)+anim('x2',a[key][0]+8,b[key][0]+8)+anim('y1',a[key][1],b[key][1])+anim('y2',a[key][1],b[key][1]):'','#15233d',7);
+ if(def.equipment==='cable'){
+  if(def.id==='face-pull')svg+=line(...a.shoulder,...a.shoulder2,'','#1268c8',8)+line(...a.shoulder2,...a.hip,'','#1268c8',10);
+  // One shared attachment/stack: cable to hand midpoint, bar/rope joins hands.
+  const mid=p=>[(p.hand[0]+p.hand2[0])/2+(def.id==='face-pull'?18:0),(p.hand[1]+p.hand2[1])/2],ma=mid(a),mb=mid(b);
+  svg+=line(...def.pulley,...ma,moving?anim('x2',ma[0],mb[0])+anim('y2',ma[1],mb[1]):'','#63708a',2);
+  if(def.id==='face-pull')for(const key of ['hand','hand2'])svg+=line(...ma,...a[key],moving?anim('x1',ma[0],mb[0])+anim('y1',ma[1],mb[1])+anim('x2',a[key][0],b[key][0])+anim('y2',a[key][1],b[key][1]):'','#15233d',4);
+  else svg+=line(...a.hand,...a.hand2,moving?anim('x1',a.hand[0],b.hand[0])+anim('y1',a.hand[1],b.hand[1])+anim('x2',a.hand2[0],b.hand2[0])+anim('y2',a.hand2[1],b.hand2[1]):'','#15233d',5);
+ }
  return svg;
 }
 function equipment(def){
+ if(def.equipment==='cable')return `<path d="M270 18V213M249 213H287" stroke="#91a0b4" stroke-width="7" fill="none"/><rect x="253" y="166" width="25" height="32" rx="3" fill="#c3d0e0"/><circle cx="${def.pulley[0]}" cy="${def.pulley[1]}" r="7" fill="#63708a"/>`+(def.id==='lat-pulldown'||def.id==='seated-cable-row'?'<path d="M107 155H159M128 155V213" stroke="#91a0b4" stroke-width="6" fill="none"/>':'');
  if(def.equipment==='bench')return '<path d="M51 179H203M72 179V214M186 179V214" stroke="#91a0b4" stroke-width="7" fill="none"/>';
  if(def.equipment==='machine')return '<path d="M125 154H175M128 92V154M150 154V214M94 214V28M94 28H188M188 28V214" stroke="#91a0b4" stroke-width="7" fill="none"/>';
  return '';
@@ -50,4 +71,4 @@ for(const def of definitions){
  await writeFile(`${directory}/${def.id}-poses.svg`,`${opening.replace('0 0 300 260','0 0 600 280')}<rect width="600" height="280" rx="16" fill="#edf5ff"/><g>${equipment(def)}${figure(def)}<text x="150" y="245" text-anchor="middle" font-family="sans-serif" font-size="16">Pose awal</text></g><g transform="translate(300 0)">${equipment(def)}${figure(def,false,true)}<text x="150" y="245" text-anchor="middle" font-family="sans-serif" font-size="16">Pose akhir fase</text></g><text x="300" y="268" text-anchor="middle" font-family="sans-serif" font-size="12">${def.view} · kembali ke pose awal untuk satu rep</text></svg>\n`);
 }
 await writeFile(`${directory}/manifest.json`,JSON.stringify({creator:'Gymbro contributors',license:'CC-BY-4.0',licenseUrl:'https://creativecommons.org/licenses/by/4.0/',attribution:'Gymbro contributors — Gymbro exercise guides — CC-BY-4.0',source:'frontend/scripts/generate-exercise-guides.mjs',exercises:definitions.map(d=>({id:d.id,animation:`${d.id}.svg`,poses:`${d.id}-poses.svg`}))},null,2)+'\n');
-console.log('Generated five original animated SVGs and five start/end pose guides');
+console.log(`Generated ${definitions.length} original animated SVGs and start/end pose guides`);

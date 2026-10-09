@@ -27,7 +27,7 @@ bash scripts/start-local.sh
 
 Jika repo sudah ada, gunakan `git pull --ff-only` setelah menyimpan perubahan lokal. Script startup membangun binary Go, menerapkan versioned SQL migrations secara transactional, lalu menyajikan API dan build web pada origin yang sama. Buka **localhost port 8080**. Terminal tetap berjalan; hentikan server dengan Ctrl+C. Jalankan kembali script untuk restart. Ulangi `npm --prefix frontend run build:web` setelah perubahan frontend; reload browser setelah cache service worker berganti.
 
-Selama PR tahap 7 belum di-merge, fitur pilihan sudut berada di branch `feat/fixed-camera-views`. Untuk checkout baru dari clone `main`, jalankan `git fetch origin feat/fixed-camera-views` lalu `git switch --track origin/feat/fixed-camera-views` sebelum build. Jika branch lokal itu sudah ada, gunakan `git switch feat/fixed-camera-views`. Setelah PR di-merge, fitur tersedia melalui pembaruan `main` biasa.
+Selama PR fitur belum di-merge, gunakan branch `feat/cable-pull-exercises` untuk sembilan gerakan dan pilihan sudut kamera. Dari clone baru `main`, jalankan `git fetch origin feat/cable-pull-exercises` lalu `git switch --track origin/feat/cable-pull-exercises` **sebelum build**. Jika branch lokal sudah ada, gunakan `git switch feat/cable-pull-exercises`. Branch ini dibangun di atas `feat/fixed-camera-views` (PR tahap 7); setelah seluruh PR di-merge, fitur tersedia melalui pembaruan `main` biasa. Jika memakai milestone lama di `main`, katalognya masih lima gerakan.
 
 Database development berada di loopback port 54329, database/user `gymbro_local`. Password default `gymbro-local-development-only` hanya contoh development lokal. Compose menyimpan data dalam volume `gymbro_local-postgres`. Untuk mengganti konfigurasi, salin `.env.example` menjadi `.env`, lalu isi secara lokal. Mengganti password pada Compose tidak otomatis mengubah password di volume PostgreSQL yang sudah diinisialisasi. Jangan commit `.env` atau credential nyata.
 
@@ -36,7 +36,7 @@ curl --fail http://localhost:8080/health
 curl --fail http://localhost:8080/api/v1/exercises
 ```
 
-Health mengembalikan `{"service":"gymbro","status":"ok"}`; katalog berisi lima latihan dan atribusi SVG. `GET /api/v1/auth/capabilities` mengembalikan `google_configured: false` jika dua variabel OAuth belum diisi. Guest tetap berfungsi.
+Health mengembalikan `{"service":"gymbro","status":"ok"}`; katalog pada branch tahap 8 berisi sembilan latihan dan atribusi SVG. `GET /api/v1/auth/capabilities` mengembalikan `google_configured: false` jika dua variabel OAuth belum diisi. Guest tetap berfungsi.
 
 Untuk menghentikan PostgreSQL dengan data tetap tersimpan:
 
@@ -70,7 +70,9 @@ Login tidak otomatis memindahkan workout tamu. Pilih **Impor workout tamu** untu
 
 Untuk kamera dari perangkat lain melalui alamat IP jaringan, diperlukan HTTPS. Deteksi browser pada localhost desktop dapat diuji terlebih dahulu; jangan menganggap pengujian kamera sintetis sebagai bukti dukungan perangkat fisik.
 
-Pilihan sudut tersimpan lokal dan dipulihkan setelah reload bersama catatan sesi. Sesi lama tanpa field sudut, atau riwayat dari perangkat lain, memakai panduan default yang terkunci; gunakan posisi fisik semula atau pencatatan manual. Konfigurasi sudut tidak disinkronkan ke backend. Aplikasi menangani sendi hilang dan pergantian sisi tubuh, tetapi belum memiliki detektor khusus untuk setiap perpindahan kamera. Curl otomatis selalu memerlukan kedua lengan terlihat dan bergerak serempak.
+Pilihan sudut tersimpan lokal dan dipulihkan setelah reload bersama catatan sesi. Sesi lama tanpa field sudut, atau riwayat dari perangkat lain, memakai panduan default yang terkunci; gunakan posisi fisik semula atau pencatatan manual. Konfigurasi sudut tidak disinkronkan ke backend. Aplikasi menangani sendi hilang dan pergantian sisi tubuh, tetapi belum memiliki detektor khusus untuk setiap perpindahan kamera. Curl dan empat cable otomatis selalu memerlukan kedua lengan terlihat dan bergerak serempak. Untuk cable, lat pulldown ke depan dada dan seated cable row dilakukan duduk; rope face pull dan straight-arm cable pulldown dilakukan berdiri. Face pull memerlukan kepala terlihat; straight-arm memerlukan siku relatif lurus. Isi angka kg satu weight stack: 40 kg × 10 reps = 400 kg. Profil pilihan pengguna tetap terpisah dari hasil klasifikasi otomatis.
+
+Pemilih kamera depan/belakang belum tersedia: adapter web saat ini meminta kamera depan melalui `facingMode: user`, mengikuti ketersediaan perangkat/browser. Pilihan **Sudut kamera** mendeskripsikan posisi terhadap tubuh, bukan memilih kamera perangkat. Dukungan memilih sensor depan/belakang atau webcam terpisah merupakan fitur lanjutan; kamera dan posisi tetap sepanjang sesi.
 
 ## Menjalankan tes
 
@@ -115,7 +117,9 @@ Prompt awal yang dapat digunakan:
 Lanjutkan proyek Gymbro. Baca AGENTS.md, GLOSSARY.md, README.md,
 docs/implementation-plan.md, docs/implementation-stage-5.md,
 docs/implementation-stage-6.md, docs/validation-stage-5.md,
-docs/localhost-guide.md, serta OpenSpec change gymbro-web-mvp dan task terbukanya.
+docs/localhost-guide.md, docs/implementation-stage-7.md, docs/implementation-stage-8.md,
+docs/validation-stage-8.md, serta OpenSpec changes gymbro-web-mvp dan
+cable-pull-exercises beserta task terbukanya.
 Mulai setiap perubahan dengan implementation plan tertulis dan TDD RED/GREEN/REFACTOR.
 Pertahankan deteksi/media di perangkat dan tiga schema PostgreSQL.
 Jalankan aplikasi localhost dan tes yang relevan sebelum mengubah status task.

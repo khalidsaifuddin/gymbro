@@ -1,7 +1,8 @@
 import {WorkoutSession,type ExerciseId,type WorkoutSet} from '../domain/workout';
 import {validateSnapshot} from '../domain/workout-snapshot';
 import type {LocalWorkout} from '../storage/workout-store';
-export const catalogIds:Record<ExerciseId,string>={'squat':'00000000-0000-4000-8000-000000000001','push-up':'00000000-0000-4000-8000-000000000002','dumbbell-curl':'00000000-0000-4000-8000-000000000003','machine-shoulder-press':'00000000-0000-4000-8000-000000000004','bench-press':'00000000-0000-4000-8000-000000000005'};
+import {exerciseCatalog} from '../domain/exercises';
+export const catalogIds=Object.fromEntries(Object.entries(exerciseCatalog).map(([id,e])=>[id,e.uuid])) as Record<ExerciseId,string>;
 export type Binding={workoutId:string;ownerId:string;serverRevision:number;occurrences:Record<ExerciseId,string>;deleted?:boolean;deleteRequested?:boolean};
 export type SourceDTO={id:string;reps:number;detected_reps:number;load_kg:string|null;implement_count:number;source_ids:string[];merged_from:SourceDTO[];load_edited:boolean;label_source:string;raw_exercise_id?:string|null;source_exercise_id?:string;source_origin?:WorkoutSet['origin'];source_started_at?:string;source_ended_at?:string|null;source_last_rep_at?:string};
 export type SetDTO=SourceDTO&{position:number;rep_source:WorkoutSet['origin'];detected_exercise_id:string|null;recognition_status:string;started_at:string;ended_at:string|null;last_rep_at:string;rest_duration_ms:number};

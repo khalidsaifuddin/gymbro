@@ -1,7 +1,7 @@
 import type { ExerciseId } from '../domain/workout';
 import { PosePhaseAdapter, type PoseFrame, type PoseOptions, type PoseResult } from './pose-phase-adapter';
 
-const exercises: ExerciseId[]=['squat','push-up','dumbbell-curl','machine-shoulder-press','bench-press'];
+import {exerciseIds as exercises} from '../domain/exercises';
 type Cycle={ready:boolean;peak:boolean};
 
 export class TemporalExerciseRecognizer {

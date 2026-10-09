@@ -1,5 +1,8 @@
 import type { ExerciseId, Observation, Phase } from '../domain/workout';
 import {allowsSingleSide,isCameraView,type CameraView} from '../domain/camera-view';
+import {isCableExercise} from '../domain/exercises';
+import {CablePoseAdapter} from './cable-pose-adapter';
+import {valid,angle} from './pose-geometry';
 
 export type Landmark = { x: number; y: number; visibility?: number; presence?: number };
 export type PoseFrame = {
@@ -26,6 +29,7 @@ export class PosePhaseAdapter {
   private candidateAt = 0;
   private frames = 0;
   private selectedSide: 0|1|null = null;
+  private cable: CablePoseAdapter|null=null;
 
   constructor(options: PoseOptions) {
     this.options = {smoothingAlpha: .5, stableFrames: 3, stableMs: 120, cameraView:'auto', ...options};
@@ -34,9 +38,11 @@ export class PosePhaseAdapter {
         !Number.isSafeInteger(stableFrames) || stableFrames < 1 || !Number.isFinite(stableMs) || stableMs < 0) {
       throw new Error('Invalid pose smoothing/debounce configuration');
     }
+    if(isCableExercise(options.exercise))this.cable=new CablePoseAdapter({...this.options,exercise:options.exercise});
   }
 
   process(frame: PoseFrame): PoseResult {
+    if(this.cable)return this.cable.process(frame);
     const now = frame.timestampMs;
     if (!Number.isFinite(now) || now < 0 || (this.timestamp !== null && now <= this.timestamp)) {
       return this.invalid('invalid-timestamp');
@@ -81,6 +87,7 @@ export class PosePhaseAdapter {
       const torsoY=(points[11+side].y+points[23+side].y)/2;
       return exercise === 'bench-press' ? points[15+side].y >= torsoY-.01 : points[15+side].y <= torsoY+.01;
     })) return this.invalid('camera-position');
+    if (exercise === 'machine-shoulder-press' && sides.some(side => points[15+side].y>points[11+side].y+.1*Math.hypot(points[23+side].x-points[11+side].x,points[23+side].y-points[11+side].y))) return this.invalid('camera-position');
     if (exercise === 'machine-shoulder-press' && sides.some(side => {
       const hip = points[23+side], knee = points[25+side];
       return Math.abs(knee.y-hip.y) > Math.abs(knee.x-hip.x)*.6;
@@ -125,18 +132,4 @@ export class PosePhaseAdapter {
     return {observation: {exercise: null, phase: 'moving', visible: false,
       ...(bilateral === undefined ? {} : {bilateral})}, reason};
   }
-}
-
-function valid(point: Landmark | undefined): point is Landmark {
-  return !!point && Number.isFinite(point.x) && Number.isFinite(point.y) &&
-    point.x >= 0 && point.x <= 1 && point.y >= 0 && point.y <= 1 &&
-    Number.isFinite(point.visibility) && point.visibility! >= .55 &&
-    (point.presence === undefined || (Number.isFinite(point.presence) && point.presence >= .55));
-}
-
-function angle(a: Landmark, b: Landmark, c: Landmark): number | null {
-  const ux=a.x-b.x, uy=a.y-b.y, vx=c.x-b.x, vy=c.y-b.y;
-  const length=Math.hypot(ux,uy)*Math.hypot(vx,vy);
-  if (length < 1e-8) return null;
-  return Math.acos(Math.max(-1,Math.min(1,(ux*vx+uy*vy)/length)))*180/Math.PI;
 }

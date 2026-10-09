@@ -4,6 +4,7 @@ export type Job={mutationId:string;ownerId:string;localRevision:number;envelope:
 type State={workouts:LocalWorkout[];bindings:Binding[];outbox:Job[]};
 const notice=()=>{if(typeof document!=='undefined')document.dispatchEvent(new Event('gymbro-storage-changed'));};
 function upsert(record:LocalWorkout,binding:Binding):Job{
+ for(const set of record.snapshot.sets)binding.occurrences[set.exercise]??=crypto.randomUUID();
  const id=crypto.randomUUID();return {mutationId:id,ownerId:binding.ownerId,localRevision:record.revision,status:'pending',envelope:{account_id:binding.ownerId,mutation_id:id,workout_id:record.id,base_revision:binding.serverRevision,operation:'upsert',occurred_at:new Date(record.snapshot.savedAt).toISOString(),workout:toDTO(record,binding)}};
 }
 function deletion(record:LocalWorkout,binding:Binding):Job{const id=crypto.randomUUID();return {mutationId:id,ownerId:binding.ownerId,localRevision:record.revision,status:'pending',envelope:{account_id:binding.ownerId,mutation_id:id,workout_id:record.id,base_revision:binding.serverRevision,operation:'delete',occurred_at:new Date().toISOString()}};}

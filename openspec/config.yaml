@@ -10,7 +10,8 @@ context: |
   Backend structural reference: khalidsaifuddin/widyaprada/backend; inspect docs/backend-architecture-reference.md.
   Backend MVP stack: Gin, GORM, PostgreSQL, versioned migrations; no Redis. Domain/use cases must not import Gin/GORM.
   MVP exercises: squat, push-up, dumbbell biceps curl, seated machine shoulder press, flat barbell bench press.
-  One person per session, stationary camera, visible relevant body parts.
+  Stage 8 adds bilateral front-chest lat pulldown, seated cable row, rope face pull, straight-arm cable pulldown: nine total, one selected machine stack and implement count 1 for cables.
+  One person per session, stationary camera for the entire workout including pause/rest/exercise changes, visible relevant body parts.
   Detection runs in the browser; do not upload video to the server.
   Video recording is off by default; optional recordings can be saved to the user's device or discarded.
   Uncertain recognition must allow manual exercise selection. Count complete movement cycles only; allow post-set corrections.

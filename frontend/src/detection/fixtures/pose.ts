@@ -17,6 +17,16 @@ export function pose(exercise: ExerciseId, angle: number, rightAngle = angle): L
     const armAngle=exercise === 'squat' ? 170 : (side ? rightAngle : angle);
     const radians=armAngle*Math.PI/180;
     points[15+side] = {x: x+.14*Math.sin(radians), y: .35+shift-.14*Math.cos(radians), visibility: 1, presence: 1};
+    if(exercise==='machine-shoulder-press'){
+      // Press endpoints: hands near/above shoulders, then overhead. The old
+      // generic curl arm placed hands at chest level and resembled pulldown.
+      const progress=Math.max(0,Math.min(1,(armAngle-90)/80));
+      const elbowX=x-.12+.11*progress,elbowY=.27-.15*progress+shift;
+      const upperDirection=Math.atan2(points[11+side].y-elbowY,x-elbowX);
+      const forearm=upperDirection-radians;
+      points[13+side]={x:elbowX,y:elbowY,visibility:1,presence:1};
+      points[15+side]={x:elbowX+.1*Math.cos(forearm),y:elbowY+.1*Math.sin(forearm),visibility:1,presence:1};
+    }
     if (exercise === 'bench-press') {
       points[13+side]={x:x+.14,y:.2+shift,visibility:1,presence:1};
       points[15+side]={x:x+.14-.14*Math.cos(radians),y:.2+shift-.14*Math.sin(radians),visibility:1,presence:1};

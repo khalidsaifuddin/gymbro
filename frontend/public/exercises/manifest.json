@@ -29,6 +29,26 @@
       "id": "bench-press",
       "animation": "bench-press.svg",
       "poses": "bench-press-poses.svg"
+    },
+    {
+      "id": "lat-pulldown",
+      "animation": "lat-pulldown.svg",
+      "poses": "lat-pulldown-poses.svg"
+    },
+    {
+      "id": "seated-cable-row",
+      "animation": "seated-cable-row.svg",
+      "poses": "seated-cable-row-poses.svg"
+    },
+    {
+      "id": "face-pull",
+      "animation": "face-pull.svg",
+      "poses": "face-pull-poses.svg"
+    },
+    {
+      "id": "straight-arm-pulldown",
+      "animation": "straight-arm-pulldown.svg",
+      "poses": "straight-arm-pulldown-poses.svg"
     }
   ]
 }

@@ -13,6 +13,31 @@ it('requires opt-in for guest import and keeps account caches isolated',async()=
  await expect(store.enqueue(local,'00000000-0000-4000-8000-000000000012',true)).rejects.toThrow(/owner/i);
  await store.close();
 });
+it('adds stable cable occurrence IDs to old bindings without changing an in-flight envelope',async()=>{
+ class LegacyStore extends SyncStore{
+  async stripNewOccurrences(){const db=await this.open();await new Promise<void>((resolve,reject)=>{
+   const tx=db.transaction('bindings','readwrite'),store=tx.objectStore('bindings'),all=store.getAll();
+   all.onsuccess=()=>{for(const b of all.result){for(const slug of ['lat-pulldown','seated-cable-row','face-pull','straight-arm-pulldown'])delete b.occurrences[slug];store.put(b);}};
+   tx.oncomplete=()=>resolve();tx.onabort=()=>reject(tx.error);
+  });}
+ }
+ const store=new LegacyStore(new IDBFactory(),'test');let now=10000;
+ const session=new WorkoutSession({clock:()=>now,idFactory:()=>crypto.randomUUID()});session.addManualSet('bench-press',8,40);
+ let local=await store.save({...record(),snapshot:session.exportSnapshot()},0);await store.enqueue(local,owner,true);await store.stripNewOccurrences();
+ const sent=(await store.claim(owner))!;now+=1000;session.addManualSet('lat-pulldown',10,40);session.finish();
+ local=await store.save({...local,snapshot:session.exportSnapshot()},local.revision);await store.enqueue(local,owner);
+ expect(await store.claim(owner)).toEqual(sent);
+ await store.acknowledge(sent,{mutation_id:sent.mutationId,workout_id:local.id,revision:1,deleted:false});
+ const next=(await store.claim(owner))!,occurrence=next.envelope.workout!.exercises.find(e=>e.exercise_id.endsWith('000006'))!.id;
+ expect(occurrence).toMatch(/^[0-9a-f-]{36}$/);expect((await store.bindings())[0].occurrences['lat-pulldown']).toBe(occurrence);
+ expect(await store.claim(owner)).toEqual(next);await store.close();
+});
+it('rejects unknown server exercises atomically instead of overwriting local history',async()=>{
+ const store=new SyncStore(new IDBFactory(),'test'),local=await store.save(record(),0);await store.enqueue(local,owner,true);const job=(await store.claim(owner))!;
+ await store.acknowledge(job,{mutation_id:job.mutationId,workout_id:local.id,revision:1,deleted:false});
+ const remote=structuredClone(job.envelope.workout!);remote.revision=2;remote.exercises[0].exercise_id='00000000-0000-4000-8000-999999999999';
+ await expect(store.receive(owner,[remote])).rejects.toThrow(/unsupported/i);expect(await store.list()).toEqual([local]);expect((await store.bindings())[0].serverRevision).toBe(1);await store.close();
+});
 it('keeps local camera configuration out of API payloads and preserves it across history and conflict replacement',async()=>{
  const store=new SyncStore(new IDBFactory(),'test');const value={...record(),preferences:{...record().preferences,cameraView:'rear-left' as const}};
  const local=await store.save(value,0);await store.enqueue(local,owner,true);const job=(await store.claim(owner))!;
