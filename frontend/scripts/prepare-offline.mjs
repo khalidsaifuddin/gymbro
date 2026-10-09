@@ -6,6 +6,7 @@ async function files(path,prefix='') {
  const rows=[];
  for(const entry of await readdir(path,{withFileTypes:true})) {
   const relative=prefix+entry.name;
+  if(relative.startsWith('exercise-media/'))continue;
   if(entry.isDirectory())rows.push(...await files(join(path,entry.name),relative+'/'));
   else if(entry.name!=='gymbro-sw.js')rows.push(relative);
  }

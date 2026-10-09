@@ -1,5 +1,5 @@
 import type { Observation, Phase } from '../domain/workout';
-import {allowsSingleSide,isCameraView,type CameraView} from '../domain/camera-view';
+import {allowsSingleSideForExercise,isCameraView,type CameraView} from '../domain/camera-view';
 import {isCableExercise} from '../domain/exercises';
 import type {SupportedExerciseId} from '../domain/exercises';
 import {CablePoseAdapter} from './cable-pose-adapter';
@@ -37,7 +37,7 @@ export class PosePhaseAdapter {
   private curlAngleSource:'image'|'world'|null=null;
 
   constructor(options: PoseOptions) {
-    const sensitive = options.exercise === 'squat' || options.exercise === 'dumbbell-curl';
+    const sensitive = options.exercise === 'squat' || options.exercise === 'dumbbell-curl' || options.exercise === 'push-up';
     this.options = {smoothingAlpha: sensitive ? .85 : .65, stableFrames: 2,
       stableMs: sensitive ? 30 : 80, cameraView:'auto', ...options};
     const {smoothingAlpha, stableFrames, stableMs} = this.options;
@@ -67,11 +67,11 @@ export class PosePhaseAdapter {
     const raw = frame.landmarks;
     // Moderate confidence is usable when every measured joint remains in-frame.
     // Missing/very weak points still invalidate the entire cycle immediately.
-    const minConfidence = isSquat || exercise === 'dumbbell-curl' ? .45 : .55;
+    const minConfidence = isSquat || exercise === 'dumbbell-curl' || exercise === 'push-up' ? .45 : .55;
     const eligible=([0,1] as const).filter(side=>required.every(index=>
       exercise === 'dumbbell-curl' && index === 15
         ? this.validCurlWrist(raw,side) : valid(raw[index+side],minConfidence)));
-    const single=allowsSingleSide(this.options.cameraView)&&exercise!=='dumbbell-curl';
+    const single=allowsSingleSideForExercise(exercise,this.options.cameraView);
     if (raw.length !== 33 || (single ? eligible.length===0 : eligible.length!==2)) {
       return this.invalid('landmarks-unavailable');
     }
@@ -153,8 +153,8 @@ export class PosePhaseAdapter {
     if (exercise === 'machine-shoulder-press' || exercise === 'bench-press') {
       return degrees <= 105 ? 'ready' : degrees >= 155 ? 'peak' : 'moving';
     }
-    const ready = exercise === 'dumbbell-curl' ? 140 : exercise === 'squat' ? 145 : 155;
-    const peak = exercise === 'dumbbell-curl' ? 100 : exercise === 'squat' ? 130 : exercise === 'push-up' ? 100 : 105;
+    const ready = exercise === 'dumbbell-curl' ? 140 : exercise === 'squat' || exercise === 'push-up' ? 145 : 155;
+    const peak = exercise === 'dumbbell-curl' ? 100 : exercise === 'squat' ? 130 : exercise === 'push-up' ? 110 : 105;
     return degrees >= ready ? 'ready' : degrees <= peak ? 'peak' : 'moving';
   }
 

@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type Options struct {
@@ -23,16 +24,53 @@ type Options struct {
 	History   usecase.History
 	Sync      usecase.Sync
 	PublicURL string
+	APIURL    string
 	WebDir    string
 }
 
 func New(o Options) *gin.Engine {
 	r := middleware.NewRouter()
-	secure := len(o.PublicURL) > 8 && o.PublicURL[:8] == "https://"
+	apiURL := o.APIURL
+	if apiURL == "" {
+		apiURL = o.PublicURL
+	}
+	secure := strings.HasPrefix(apiURL, "https://")
 	cookie := func(c *gin.Context, name, value, path string, maxAge int) {
 		c.SetSameSite(http.SameSiteLaxMode)
 		c.SetCookie(name, value, maxAge, path, "", secure, true)
 	}
+	r.Use(func(c *gin.Context) {
+		origin := c.GetHeader("Origin")
+		if origin != "" && origin == o.PublicURL {
+			c.Header("Access-Control-Allow-Origin", o.PublicURL)
+			c.Header("Access-Control-Allow-Credentials", "true")
+			c.Header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
+			c.Header("Access-Control-Allow-Headers", "Content-Type, X-CSRF-Token")
+			c.Header("Access-Control-Max-Age", "600")
+			c.Header("Vary", "Origin")
+		}
+		if c.Request.Method == http.MethodOptions && c.GetHeader("Access-Control-Request-Method") != "" {
+			if origin != o.PublicURL {
+				c.AbortWithStatus(http.StatusForbidden)
+				return
+			}
+			method := c.GetHeader("Access-Control-Request-Method")
+			if method != http.MethodGet && method != http.MethodPost && method != http.MethodDelete {
+				c.AbortWithStatus(http.StatusForbidden)
+				return
+			}
+			for _, header := range strings.Split(c.GetHeader("Access-Control-Request-Headers"), ",") {
+				header = strings.ToLower(strings.TrimSpace(header))
+				if header != "" && header != "content-type" && header != "x-csrf-token" {
+					c.AbortWithStatus(http.StatusForbidden)
+					return
+				}
+			}
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		c.Next()
+	})
 	clear := func(c *gin.Context) { cookie(c, "gymbro_session", "", "/", -1); cookie(c, "gymbro_csrf", "", "/", -1) }
 	r.Use(func(c *gin.Context) {
 		if len(c.Request.URL.Path) >= 5 && c.Request.URL.Path[:5] == "/api/" {
@@ -63,12 +101,12 @@ func New(o Options) *gin.Engine {
 		cookie(c, "gymbro_oauth", "", "/api/v1/auth", -1)
 		credentials, err := o.Auth.Callback(c.Request.Context(), c.Query("state"), binding, c.Query("code"))
 		if err != nil {
-			c.Redirect(303, "/?login=failed")
+		c.Redirect(303, o.PublicURL+"/?login=failed")
 			return
 		}
 		cookie(c, "gymbro_session", credentials.Token, "/", 30*86400)
 		cookie(c, "gymbro_csrf", credentials.CSRF, "/", 30*86400)
-		c.Redirect(303, "/")
+		c.Redirect(303, o.PublicURL+"/")
 	})
 	auth := func(c *gin.Context) {
 		token, _ := c.Cookie("gymbro_session")

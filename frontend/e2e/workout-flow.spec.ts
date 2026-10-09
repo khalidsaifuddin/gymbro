@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test';
 import {pose} from '../src/detection/fixtures/pose';
 import {injectFrames} from './fixtures/pose-replay';
+import {openCameraControls} from './fixtures/workout-ui';
 
 const url='http://127.0.0.1:8081/';
 
@@ -59,6 +60,46 @@ test('routine targets persist, can be edited, and start a copied workout plan',a
  await expect(page.getByRole('heading',{name:'Back Day'})).toHaveCount(0);
 });
 
+test('active workout does not overflow phone widths',async({page})=>{
+ await page.setViewportSize({width:320,height:844});
+ await page.goto(url);await page.getByRole('button',{name:'Start Empty Workout'}).click();
+ await page.getByRole('button',{name:'Add Exercise'}).click();
+ await page.getByRole('button',{name:'Dumbbell curl',exact:true}).click();
+
+ for(const width of [320,375,390,430]){
+  await page.setViewportSize({width,height:844});
+  const layout=await page.evaluate(()=>({
+   viewport:window.innerWidth,
+   document:document.documentElement.scrollWidth,
+   bounds:['.gymbro-shell','.gymbro-stats','.gymbro-workout-card'].map(selector=>{
+    const element=document.querySelector(selector);
+    if(!element)return {selector,missing:true,left:-1,right:Number.POSITIVE_INFINITY};
+    const rect=element.getBoundingClientRect();
+    return {selector,missing:false,left:rect.left,right:rect.right};
+   }),
+  }));
+  expect(layout.document,`document width at ${width}px: ${JSON.stringify(layout.bounds)}`).toBeLessThanOrEqual(width);
+  for(const item of layout.bounds){
+   expect(item.missing,`${item.selector} should exist at ${width}px`).toBe(false);
+   expect(item.left,`${item.selector} left edge at ${width}px`).toBeGreaterThanOrEqual(0);
+   expect(item.right,`${item.selector} right edge at ${width}px`).toBeLessThanOrEqual(width);
+  }
+  const table=await page.locator('.gymbro-set-table').evaluate(element=>({client:element.clientWidth,scroll:element.scrollWidth}));
+  expect(table.client,`set table width at ${width}px`).toBeLessThanOrEqual(width);
+  expect(table.scroll,`set rows should remain internally scrollable at ${width}px`).toBeGreaterThan(table.client);
+ }
+});
+
+test('fallback entry is absent from an active workout',async({page})=>{
+ await page.goto(url);
+ await page.getByRole('button',{name:'Start Empty Workout'}).click();
+ await expect(page.getByRole('button',{name:'Add Exercise'})).toBeVisible();
+ await expect(page.getByRole('button',{name:'Jeda workout'})).toBeVisible();
+ await expect(page.getByText('Fallback entry',{exact:true})).toHaveCount(0);
+ await expect(page.getByRole('heading',{name:'Catat set manual'})).toHaveCount(0);
+ await expect(page.getByLabel('Reps manual')).toHaveCount(0);
+});
+
 test('explore searches and filters the local exercise catalogue without starting a session',async({page})=>{
  await page.goto(url);await page.getByRole('button',{name:'Explore'}).click();
  await page.getByLabel('Search exercises').fill('row');
@@ -83,11 +124,12 @@ test('exercise camera fills a phone viewport and closing it clears the live feed
  await page.getByRole('button',{name:'Open camera for Dumbbell curl'}).click();
  const camera=page.getByTestId('full-screen-camera');
  await expect(camera).toBeVisible();
+ await openCameraControls(page);
  const bounds=await camera.boundingBox();expect(bounds).not.toBeNull();
  expect(bounds!.height).toBeGreaterThanOrEqual(840);
  expect(bounds!.width).toBeGreaterThanOrEqual(390);
  await expect(page.getByTestId('live-rep-counter')).toBeVisible();
- await page.getByRole('button',{name:'Aktifkan kamera'}).click();
+ await expect(page.getByRole('button',{name:'Jeda kamera'})).toBeVisible();
  await expect(page.getByTestId('camera-framing-overlay').locator('[data-joint-index="15"]')).toHaveCount(1);
  await page.getByRole('button',{name:'Back to workout'}).click();
  await expect(camera).toHaveCount(0);

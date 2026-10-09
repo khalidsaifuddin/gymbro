@@ -28,9 +28,15 @@ func main() {
 	if origin == "" {
 		origin = "http://localhost:8080"
 	}
-	u, err := url.Parse(origin)
-	if err != nil || u.User != nil || u.RawQuery != "" || u.Fragment != "" || u.Path != "" || u.Host == "" || (u.Scheme != "https" && !(u.Scheme == "http" && (u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" || u.Hostname() == "::1"))) {
+	if !validOrigin(origin) {
 		log.Fatal("GYMBRO_PUBLIC_URL must be an HTTPS origin, or HTTP loopback for development")
+	}
+	apiOrigin := os.Getenv("GYMBRO_API_PUBLIC_URL")
+	if apiOrigin == "" {
+		apiOrigin = origin
+	}
+	if !validOrigin(apiOrigin) {
+		log.Fatal("GYMBRO_API_PUBLIC_URL must be an HTTPS origin, or HTTP loopback for development")
 	}
 	db, err := config.OpenDatabase()
 	if err != nil {
@@ -46,20 +52,28 @@ func main() {
 		log.Fatal("Google OAuth requires both client ID and secret")
 	}
 	if id != "" {
-		p, e := googleauth.New(context.Background(), "https://accounts.google.com", id, secret, origin+"/api/v1/auth/google/callback")
+		p, e := googleauth.New(context.Background(), "https://accounts.google.com", id, secret, apiOrigin+"/api/v1/auth/google/callback")
 		if e != nil {
 			log.Fatal("Google OIDC discovery unavailable")
 		}
 		provider = p
 	}
 	web := os.Getenv("GYMBRO_WEB_DIR")
-	if web == "" {
+	if os.Getenv("GYMBRO_API_ONLY") == "true" {
+		web = ""
+	} else if web == "" {
 		web = "../frontend/dist"
 	}
-	router := api.New(api.Options{Auth: usecase.NewAuth(provider, sessions), Sessions: sessions, Catalog: catalogrepo.New(db), History: usecase.History{Workouts: workoutrepo.New(db)}, Sync: usecase.Sync{Port: syncrepo.New(db)}, PublicURL: origin, WebDir: web})
+	router := api.New(api.Options{Auth: usecase.NewAuth(provider, sessions), Sessions: sessions, Catalog: catalogrepo.New(db), History: usecase.History{Workouts: workoutrepo.New(db)}, Sync: usecase.Sync{Port: syncrepo.New(db)}, PublicURL: origin, APIURL: apiOrigin, WebDir: web})
 	server := http.Server{Addr: addr, Handler: router, ReadHeaderTimeout: 10 * time.Second, ReadTimeout: 30 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 90 * time.Second, MaxHeaderBytes: 16384}
 	log.Printf("Gymbro listening on %s; Google configured: %t", addr, provider != nil)
 	if err = server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal("HTTP server stopped")
 	}
+}
+
+func validOrigin(value string) bool {
+	u, err := url.Parse(value)
+	return err == nil && u.User == nil && u.RawQuery == "" && u.Fragment == "" && u.Path == "" && u.Host != "" &&
+		(u.Scheme == "https" || u.Scheme == "http" && (u.Hostname() == "localhost" || u.Hostname() == "127.0.0.1" || u.Hostname() == "::1"))
 }

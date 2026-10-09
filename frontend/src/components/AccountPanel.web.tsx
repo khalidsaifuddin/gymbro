@@ -1,5 +1,6 @@
 import {useState} from 'react';
 import type {useAccount} from '../sync/use-account.web';
+import {apiURL} from '../domain/api-origin';
 export default function AccountPanel({account,disabled,onReset,beforeAction}:{account:ReturnType<typeof useAccount>;disabled:boolean;onReset:()=>void;beforeAction:()=>Promise<void>}){
  const [confirmDelete,setConfirmDelete]=useState(false),[error,setError]=useState('');
  const run=async(action:()=>Promise<unknown>,reset=false)=>{setError('');try{await beforeAction();await action();if(reset)onReset();}catch(e){setError(e instanceof Error?e.message:'Operasi gagal');}};
@@ -7,7 +8,7 @@ export default function AccountPanel({account,disabled,onReset,beforeAction}:{ac
  return <section aria-label="Akun dan sinkronisasi" className="saka-card is-vertical gymbro-account">
   <strong>{account.user?`Akun: ${account.user.name}`:'Workout tamu · disimpan di perangkat'}</strong>
   <span role="status" className="saka-prose">{account.status}</span>
-  {!account.user&&(account.configured?<a className="saka-btn is-filled" href="/api/v1/auth/google/start" aria-disabled={busy} onClick={e=>{if(busy)e.preventDefault();}}>Masuk dengan Google</a>:<span className="saka-prose">Login Google tersedia setelah OAuth dikonfigurasi. Workout tamu tetap bisa digunakan.</span>)}
+  {!account.user&&(account.configured?<a className="saka-btn is-filled" href={apiURL('/api/v1/auth/google/start')} aria-disabled={busy} onClick={e=>{if(busy)e.preventDefault();}}>Masuk dengan Google</a>:<span className="saka-prose">Login Google tersedia setelah OAuth dikonfigurasi. Workout tamu tetap bisa digunakan.</span>)}
   {account.user&&<>
    {account.guests>0&&<><span className="saka-prose">{account.guests} workout tamu belum diimpor</span><button className="saka-btn" disabled={busy} onClick={()=>void run(account.importGuests)}>Impor workout tamu</button></>}
    <button className="saka-btn" disabled={busy} onClick={()=>void run(account.pull)}>Muat riwayat akun</button>

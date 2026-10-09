@@ -228,6 +228,35 @@ describe('set boundaries and corrections', () => {
     expect(session.getSets()[0]).toMatchObject({ reps: 3, detectedReps: 1 });
   });
 
+  it('removes and restores a completed edited set without changing its ID or detection provenance',()=>{
+    const {session,frame}=harness();
+    frame(100,'ready','push-up');frame(200,'peak','push-up');frame(300,'ready','push-up');session.endSet();
+    const original=session.getSets()[0];session.correctSet(original.id,2);session.setLoad(original.id,5);
+    const removed=session.removeCompletedSet(original.id);
+    expect(session.summary()).toMatchObject({totalSets:0,totalReps:0,knownVolumeKg:0});
+    session.restoreCompletedSet(removed);
+    expect(session.getSets()[0]).toMatchObject({id:original.id,exercise:'push-up',reps:2,detectedReps:1,loadKg:5,sourceIds:original.sourceIds,startedAt:100,endedAt:300});
+    expect(session.summary()).toMatchObject({totalSets:1,totalReps:2,knownVolumeKg:10});
+    expect(()=>session.restoreCompletedSet(removed)).toThrow(/already exists/i);
+  });
+
+  it('rejects removing a live set and restoring invalid or incomplete source data without mutation',()=>{
+    const {session,frame}=harness();
+    frame(0,'ready');frame(1000,'peak');frame(2000,'ready');
+    const live=session.getSets()[0];expect(()=>session.removeCompletedSet(live.id)).toThrow(/completed/i);
+    session.endSet();const saved=session.removeCompletedSet(live.id);
+    for(const reps of [-1,1.5,Infinity])expect(()=>session.restoreCompletedSet(saved,{reps})).toThrow(/reps/i);
+    for(const loadKg of [-1,Infinity])expect(()=>session.restoreCompletedSet(saved,{loadKg})).toThrow(/load/i);
+    expect(session.getSets()).toHaveLength(0);session.restoreCompletedSet(saved);expect(session.getSets()).toHaveLength(1);
+  });
+
+  it('preserves load provenance when restoring a set with the same load',()=>{
+    const {session,frame}=harness();frame(0,'ready');frame(1000,'peak');frame(2000,'ready');session.endSet();
+    const saved=session.removeCompletedSet(session.getSets()[0].id);
+    session.restoreCompletedSet(saved,{loadKg:saved.loadKg});
+    expect(session.getSets()[0].loadEdited).toBe(saved.loadEdited);
+  });
+
   it('merges completed sets without doubling corrected or raw counts', () => {
     const { session, frame } = harness();
     frame(0, 'ready'); frame(1000, 'peak'); frame(2000, 'ready'); session.endSet();

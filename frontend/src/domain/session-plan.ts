@@ -14,7 +14,7 @@ export function validatePlan(value:unknown):PlannedExercise[]{
   const exercise=item.exercise as ExerciseId;
   if(seen.has(exercise))throw new Error('Duplicate exercise in plan');
   seen.add(exercise);
-  if(!Array.isArray(item.targets)||item.targets.length<1||item.targets.length>20)throw new Error('Invalid targets in plan');
+  if(!Array.isArray(item.targets)||item.targets.length>20)throw new Error('Invalid targets in plan');
   const targets=item.targets.map((target:unknown)=>{
    if(!target||typeof target!=='object'||Array.isArray(target)||
     Object.keys(target).some(key=>!['reps','loadKg'].includes(key)))throw new Error('Invalid target in plan');

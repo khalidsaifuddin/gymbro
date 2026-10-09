@@ -1,5 +1,5 @@
 import type {SupportedExerciseId} from '../domain/exercises';
-import {allowsSingleSide,type CameraView} from '../domain/camera-view';
+import {allowsSingleSideForExercise,type CameraView} from '../domain/camera-view';
 import {isCableExercise} from '../domain/exercises';
 import type {PoseFrame} from './pose-phase-adapter';
 import {valid} from './pose-geometry';
@@ -62,7 +62,7 @@ export function assessFraming(frame:PoseFrame|null,exercise:SupportedExerciseId|
   const segments=connections.filter(([start,end])=>visible.has(start)&&visible.has(end));
   const base={guide,joints,segments};
   const needed=groupsFor(exercise);
-  const single=exercise!==null&&exercise!=='dumbbell-curl'&&!isCableExercise(exercise)&&allowsSingleSide(view);
+  const single=exercise!==null&&allowsSingleSideForExercise(exercise,view);
   const score=(side:0|1)=>needed.filter(name=>valid(landmarks[groups[name].base+side])).length;
   const side:0|1=score(1)>score(0)?1:0;
   const sides:readonly (0|1)[]=single?[side]:[0,1];

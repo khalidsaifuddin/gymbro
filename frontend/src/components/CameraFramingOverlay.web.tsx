@@ -3,15 +3,21 @@ import type {CameraView} from '../domain/camera-view';
 import type {PoseFrame} from '../detection/pose-phase-adapter';
 import {assessFraming,poseOverlayViewBox} from '../detection/camera-framing';
 
-type Props={frame:PoseFrame|null;exercise:SupportedExerciseId|null;cameraView:CameraView;videoAspectRatio:number};
+type Props={frame:PoseFrame|null;exercise:SupportedExerciseId|null;cameraView:CameraView;videoAspectRatio:number;status:string};
 
-export default function CameraFramingOverlay({frame,exercise,cameraView,videoAspectRatio}:Props){
+export default function CameraFramingOverlay({frame,exercise,cameraView,videoAspectRatio,status}:Props){
   const framing=assessFraming(frame,exercise,cameraView);
   const {width,height}=poseOverlayViewBox(videoAspectRatio);
   const guide=framing.guide==='upper'?{x:.17,y:.08,w:.66,h:.76}
     :framing.guide==='horizontal'?{x:.06,y:.24,w:.88,h:.64}
     :{x:.11,y:.05,w:.78,h:.90};
   const color=framing.state==='framed'?'var(--saka-success, #5cf2a9)':'var(--saka-accent-bright, #ff5a1f)';
+  const displayMessage=status.startsWith('Tracking terputus')
+    ?`Tracking terputus. ${framing.message}`
+    :status==='Tracking aktif'?framing.message
+      :status==='Kamera dijeda'||status==='Memuat kamera dan model…'?`${status} · ${framing.message}`
+        :status.includes('Kamera terputus')||status.includes('Izin kamera ditolak')||status.includes('tidak tersedia')?`${status} · ${framing.message}`
+          :framing.message;
   const joints=new Map(framing.joints.map(joint=>[joint.index,joint]));
   return <>
     <svg data-testid="camera-framing-overlay" aria-hidden="true" viewBox={`0 0 ${width} ${height}`}
@@ -28,9 +34,9 @@ export default function CameraFramingOverlay({frame,exercise,cameraView,videoAsp
         cx={joint.x*width} cy={joint.y*height} r="9" fill="var(--saka-accent-bright, #ff5a1f)" stroke="#050505" strokeWidth="2"/>)}
     </svg>
     <div data-testid="camera-framing-status" role="status" aria-live="polite"
-      style={{position:'absolute',left:10,right:10,bottom:10,padding:'8px 12px',borderRadius:9,
+      style={{position:'absolute',top:'calc(12px + env(safe-area-inset-top))',left:'50%',transform:'translateX(-50%)',width:'min(76%,560px)',padding:'8px 12px',borderRadius:9,
         background:'rgba(5,5,5,.88)',color:'var(--saka-accent-bright, #ff5a1f)',
         border:'1px solid var(--saka-accent-dim, #7a2c12)',font:'700 12px/1.35 ui-monospace,monospace',
-        textAlign:'center',pointerEvents:'none'}}>{framing.message}</div>
+        textAlign:'center',pointerEvents:'none'}}>{displayMessage}</div>
   </>;
 }

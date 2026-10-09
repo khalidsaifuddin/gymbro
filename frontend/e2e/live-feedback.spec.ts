@@ -1,4 +1,5 @@
 import {test,expect} from '@playwright/test';
+import {openCameraControls} from './fixtures/workout-ui';
 
 const url='http://127.0.0.1:8081/';
 
@@ -13,6 +14,7 @@ test('phone pages scroll to content below the fold and recover after closing cam
  await expect.poll(()=>page.evaluate(()=>scrollY),{timeout:2500}).toBeGreaterThan(100);
  await page.getByRole('button',{name:'Open automatic camera'}).click();
  await expect(page.getByTestId('full-screen-camera')).toBeVisible();
+ await openCameraControls(page);
  await page.getByRole('button',{name:'Back to workout'}).click();
  await page.mouse.move(200,400);await page.mouse.wheel(0,700);
  await expect.poll(()=>page.evaluate(()=>scrollY),{timeout:2500}).toBeGreaterThan(100);
